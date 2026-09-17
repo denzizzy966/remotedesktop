@@ -1,0 +1,63 @@
+/* Custom styles for LAN Remote Desktop */
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Pulse animation for live indicators */
+@keyframes live-pulse {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.pulse-dot {
+    animation: live-pulse 2s infinite ease-in-out;
+}
+
+/* Terminal styling */
+.terminal-output {
+    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Remote canvas styling */
+#remoteCanvas {
+    display: block;
+    margin: 0 auto;
+    background-color: #000;
+    max-width: 100%;
+    max-height: calc(100vh - 100px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+    cursor: default;
+}
+
+#remoteCanvas:focus {
+    outline: none;
+}
+
+/* Card hover animation */
+.client-card {
+    transition: all 0.2s ease-in-out;
+}
+.client-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+}

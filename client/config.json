@@ -1,0 +1,7 @@
+{
+    "server_url": "",
+    "server_ip": "192.168.8.251",
+    "server_port": 8001,
+    "device_id": "",
+    "auto_discover": false
+}

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - LAN Remote Desktop Admin</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
+
+    <div class="w-full max-w-md">
+        <!-- Brand Logo & Title -->
+        <div class="text-center mb-8">
+            <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 items-center justify-center shadow-xl shadow-indigo-500/25 mb-3">
+                <i class="fa-solid fa-network-wired text-white text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-tight">LAN Remote Desktop</h1>
+            <p class="text-sm text-slate-400 mt-1">Admin Management & Monitoring</p>
+        </div>
+
+        <!-- Card Container -->
+        <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+            
+            <!-- Alert / Error message -->
+            <div id="alertBox" class="hidden mb-5 p-3 rounded-lg text-xs font-medium border"></div>
+
+            <!-- Form 1: Standard Login Form -->
+            <form id="loginForm" class="space-y-5">
+                <div class="border-b border-slate-800 pb-3 mb-2">
+                    <h2 class="text-base font-semibold text-white">Administrator Login</h2>
+                    <p class="text-xs text-slate-400">Enter your admin password to access the dashboard</p>
+                </div>
+
+                <!-- Password Input with Show/Hide Toggle -->
+                <div>
+                    <label for="loginPassword" class="block text-xs font-medium text-slate-300 mb-1.5">Admin Password</label>
+                    <div class="relative">
+                        <input id="loginPassword" type="password" required placeholder="Enter admin password"
+                            class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-2.5 pr-11 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                        <button type="button" id="toggleLoginPassword" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-200 transition" title="Show/Hide Password">
+                            <i class="fa-solid fa-eye text-sm" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me & Info -->
+                <div class="flex items-center justify-between text-xs">
+                    <label class="flex items-center cursor-pointer select-none">
+                        <input id="rememberMe" type="checkbox" checked class="w-4 h-4 rounded border-slate-700 text-indigo-600 bg-slate-950 focus:ring-indigo-500 focus:ring-offset-slate-900">
+                        <span class="ml-2 text-slate-300">Remember Me (30 days)</span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="loginBtn" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition duration-200 flex items-center justify-center">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                    <span>Log In to Dashboard</span>
+                </button>
+            </form>
+
+            <!-- Form 2: First-Time Setup Wizard (Shown if setup not completed) -->
+            <form id="setupForm" class="hidden space-y-5">
+                <div class="border-b border-indigo-900/60 pb-3 mb-2">
+                    <div class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 mb-1.5 uppercase">
+                        First-Time Installation
+                    </div>
+                    <h2 class="text-base font-semibold text-white">Create Admin Password</h2>
+                    <p class="text-xs text-slate-400">Set a secure password for your Remote Desktop Admin Server</p>
+                </div>
+
+                <div>
+                    <label for="setupPassword" class="block text-xs font-medium text-slate-300 mb-1.5">New Admin Password</label>
+                    <div class="relative">
+                        <input id="setupPassword" type="password" required placeholder="Minimum 4 characters"
+                            class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-2.5 pr-11 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                        <button type="button" id="toggleSetupPassword" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-200 transition">
+                            <i class="fa-solid fa-eye text-sm" id="toggleSetupIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="setupConfirmPassword" class="block text-xs font-medium text-slate-300 mb-1.5">Confirm Password</label>
+                    <input id="setupConfirmPassword" type="password" required placeholder="Retype your password"
+                        class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                </div>
+
+                <button type="submit" id="setupBtn" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/30 transition duration-200 flex items-center justify-center">
+                    <i class="fa-solid fa-shield-halved mr-2"></i>
+                    <span>Set Password & Continue</span>
+                </button>
+            </form>
+
+        </div>
+
+        <!-- Footer Help -->
+        <div class="mt-6 text-center text-xs text-slate-500">
+            <p>Forgot password? Run <code class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded text-indigo-400 font-mono">reset_password.bat</code> in server console</p>
+        </div>
+    </div>
+
+    <!-- Login Logic -->
+    <script>
+        const alertBox = document.getElementById("alertBox");
+        const loginForm = document.getElementById("loginForm");
+        const setupForm = document.getElementById("setupForm");
+
+        function showAlert(msg, isError = true) {
+            alertBox.textContent = msg;
+            alertBox.classList.remove("hidden");
+            if (isError) {
+                alertBox.className = "mb-5 p-3 rounded-lg text-xs font-medium border bg-rose-950/50 border-rose-800/60 text-rose-300";
+            } else {
+                alertBox.className = "mb-5 p-3 rounded-lg text-xs font-medium border bg-emerald-950/50 border-emerald-800/60 text-emerald-300";
+            }
+        }
+
+        // Show/Hide password toggles
+        document.getElementById("toggleLoginPassword").addEventListener("click", () => {
+            const input = document.getElementById("loginPassword");
+            const icon = document.getElementById("toggleIcon");
+            if (input.type === "password") {
+                input.type = "text";
+                icon.className = "fa-solid fa-eye-slash text-sm text-indigo-400";
+            } else {
+                input.type = "password";
+                icon.className = "fa-solid fa-eye text-sm";
+            }
+        });
+
+        document.getElementById("toggleSetupPassword").addEventListener("click", () => {
+            const input = document.getElementById("setupPassword");
+            const icon = document.getElementById("toggleSetupIcon");
+            if (input.type === "password") {
+                input.type = "text";
+                icon.className = "fa-solid fa-eye-slash text-sm text-indigo-400";
+            } else {
+                input.type = "password";
+                icon.className = "fa-solid fa-eye text-sm";
+            }
+        });
+
+        // Check if server is configured or if already authenticated
+        async function checkStatus() {
+            const token = localStorage.getItem("admin_token");
+            if (token) {
+                try {
+                    const res = await fetch("/api/auth/verify", {
+                        headers: { "Authorization": "Bearer " + token }
+                    });
+                    const data = await res.json();
+                    if (data.authenticated) {
+                        window.location.href = "/";
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            try {
+                const res = await fetch("/api/auth/status");
+                const data = await res.json();
+                if (!data.setup_completed) {
+                    // Show first time setup form
+                    loginForm.classList.add("hidden");
+                    setupForm.classList.remove("hidden");
+                } else {
+                    loginForm.classList.remove("hidden");
+                    setupForm.classList.add("hidden");
+                }
+            } catch (e) {
+                console.error("Error checking setup status:", e);
+            }
+        }
+
+        // First Time Setup Submit
+        setupForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const pass = document.getElementById("setupPassword").value;
+            const confirm = document.getElementById("setupConfirmPassword").value;
+
+            if (pass.length < 4) {
+                showAlert("Password must be at least 4 characters long.");
+                return;
+            }
+            if (pass !== confirm) {
+                showAlert("Passwords do not match. Please retype.");
+                return;
+            }
+
+            const btn = document.getElementById("setupBtn");
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+
+            try {
+                const res = await fetch("/api/auth/setup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password: pass })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Setup completed successfully! Logging you in...", false);
+                    if (data.token) {
+                        localStorage.setItem("admin_token", data.token);
+                    }
+                    setTimeout(() => window.location.href = "/", 1000);
+                } else {
+                    showAlert(data.message || "Failed to set password.");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-shield-halved mr-2"></i> Set Password & Continue';
+                }
+            } catch (err) {
+                showAlert("Network error: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-shield-halved mr-2"></i> Set Password & Continue';
+            }
+        });
+
+        // Standard Login Submit
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const password = document.getElementById("loginPassword").value;
+            const remember = document.getElementById("rememberMe").checked;
+            const btn = document.getElementById("loginBtn");
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Verifying...';
+
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password: password, remember: remember })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Login successful! Redirecting...", false);
+                    localStorage.setItem("admin_token", data.token);
+                    setTimeout(() => window.location.href = "/", 600);
+                } else {
+                    showAlert(data.message || "Incorrect password. Please try again.");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i> Log In to Dashboard';
+                }
+            } catch (err) {
+                showAlert("Network error: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket mr-2"></i> Log In to Dashboard';
+            }
+        });
+
+        checkStatus();
+    </script>
+</body>
+</html>

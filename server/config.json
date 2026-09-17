@@ -1,0 +1,9 @@
+{
+    "password_hash": "95d848912c37683d6a25d49b5bb1bd4ea2d2f8914f37da38ee2f08ddb30575a1",
+    "password_salt": "85eea4412e67f46e7fbb930a04b9d4f4",
+    "server_name": "LAN Remote Desktop Server",
+    "session_timeout_hours": 24,
+    "remember_days": 30,
+    "require_login": true,
+    "setup_completed": true
+}
