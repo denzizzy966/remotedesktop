@@ -244,9 +244,10 @@ class RemoteClient:
 
             print(f"[Connecting] Connecting to server: {target_url}...")
             try:
-                # Set max_size to 16MB to allow high-res frame transfers
+                # Set max_size to 16MB to allow high-res frame transfers, open_timeout to 30s for cross-VLAN/WAN stability
                 async with websockets.connect(
                     target_url,
+                    open_timeout=30,
                     ping_interval=20,
                     ping_timeout=15,
                     max_size=16 * 1024 * 1024
