@@ -88,7 +88,10 @@ class RemoteDesktopViewer {
         const modal = document.getElementById("remoteModal");
         if (modal) modal.classList.remove("hidden");
         
-        document.getElementById("remoteTargetName").textContent = `${clientData.hostname || 'Device'} (${clientData.ip_address || 'LAN'})`;
+        const displayName = clientData.alias 
+            ? `${clientData.alias} (${clientData.hostname})` 
+            : `${clientData.hostname || 'Device'} (${clientData.ip_address || 'LAN'})`;
+        document.getElementById("remoteTargetName").textContent = displayName;
         document.getElementById("remoteTargetOS").textContent = clientData.os_name || "Unknown OS";
         document.getElementById("remoteResolution").textContent = "Connecting...";
         document.getElementById("remoteFps").textContent = "0 FPS";

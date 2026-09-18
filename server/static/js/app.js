@@ -194,16 +194,28 @@ class AdminDashboard {
                 this.submitServerSettings();
             });
         }
+
+        // Device Note & Alias Form
+        const noteForm = document.getElementById("noteForm");
+        if (noteForm) {
+            noteForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                this.submitNoteForm();
+            });
+        }
     }
 
     getFilteredClients() {
         const list = Array.from(this.clients.values());
         return list.filter(c => {
-            // Search query (matches hostname, IP, or username)
+            // Search query (matches alias, note, hostname, IP, username, or device ID)
             const matchesSearch = !this.searchQuery || 
+                (c.alias && c.alias.toLowerCase().includes(this.searchQuery)) ||
+                (c.note && c.note.toLowerCase().includes(this.searchQuery)) ||
                 (c.hostname && c.hostname.toLowerCase().includes(this.searchQuery)) ||
                 (c.ip_address && c.ip_address.toLowerCase().includes(this.searchQuery)) ||
-                (c.username && c.username.toLowerCase().includes(this.searchQuery));
+                (c.username && c.username.toLowerCase().includes(this.searchQuery)) ||
+                (c.device_id && c.device_id.toLowerCase().includes(this.searchQuery));
 
             // OS Filter
             let matchesOS = true;
@@ -320,6 +332,59 @@ class AdminDashboard {
             </div>
         `;
 
+        // Custom Alias & Note handling
+        const aliasText = (c.alias || "").trim();
+        const noteText = (c.note || "").trim();
+
+        // Title and Hostname display
+        let titleHtml = '';
+        if (aliasText) {
+            titleHtml = `
+                <div>
+                    <h3 class="text-base font-bold text-white tracking-wide flex items-center group">
+                        <span class="text-indigo-400 mr-1.5"><i class="fa-solid fa-tag text-xs"></i></span>
+                        <span class="truncate max-w-[170px]" title="${aliasText}">${aliasText}</span>
+                        <button onclick="app.openNoteModal('${c.device_id}')" title="Edit Nama & Catatan" class="ml-2 text-slate-500 hover:text-indigo-400 text-xs transition">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                    </h3>
+                    <p class="text-[11px] text-slate-400 flex items-center mt-0.5">
+                        <span class="font-mono text-slate-300">${c.hostname || 'Device'}</span>
+                        <span class="mx-1 text-slate-600">&bull;</span>
+                        <span>${c.username || 'user'}</span>
+                    </p>
+                </div>
+            `;
+        } else {
+            titleHtml = `
+                <div>
+                    <h3 class="text-base font-semibold text-white tracking-wide flex items-center">
+                        <span class="truncate max-w-[170px]">${c.hostname || "Unknown Host"}</span>
+                        <button onclick="app.openNoteModal('${c.device_id}')" title="Beri Nama / Catatan" class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-indigo-300 border border-slate-700 transition">
+                            <i class="fa-solid fa-tag mr-1 text-[9px]"></i> + Note
+                        </button>
+                    </h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">${c.username || 'user'}</p>
+                </div>
+            `;
+        }
+
+        // Note Banner if note exists
+        let noteHtml = '';
+        if (noteText) {
+            noteHtml = `
+                <div class="mb-3 px-2.5 py-1.5 rounded-lg bg-slate-950/70 border border-slate-800/90 text-slate-300 text-[11px] flex items-start justify-between gap-2">
+                    <div class="flex items-start space-x-1.5 overflow-hidden">
+                        <i class="fa-regular fa-note-sticky text-amber-400 mt-0.5 shrink-0"></i>
+                        <span class="truncate" title="${noteText}">${noteText}</span>
+                    </div>
+                    <button onclick="app.openNoteModal('${c.device_id}')" title="Edit Catatan" class="text-slate-500 hover:text-amber-300 shrink-0">
+                        <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                    </button>
+                </div>
+            `;
+        }
+
         return `
         <div class="client-card bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-xl backdrop-blur-sm flex flex-col justify-between">
             <div>
@@ -330,10 +395,7 @@ class AdminDashboard {
                             ${osIcon}
                         </div>
                         <div>
-                            <h3 class="text-base font-semibold text-white tracking-wide flex items-center">
-                                ${c.hostname || "Unknown Host"}
-                                <span class="ml-2 text-xs font-normal text-slate-400">(${c.username || "user"})</span>
-                            </h3>
+                            ${titleHtml}
                             <div class="flex items-center space-x-2 mt-0.5">
                                 <span class="text-xs font-mono text-cyan-400 select-all">${c.ip_address}</span>
                                 <button onclick="app.copyText('${c.ip_address}')" title="Copy IP" class="text-slate-500 hover:text-slate-300 text-xs">
@@ -346,6 +408,9 @@ class AdminDashboard {
                         ${statusBadge}
                     </div>
                 </div>
+
+                <!-- Note Banner (if any) -->
+                ${noteHtml}
 
                 <!-- OS & Uptime sub-bar -->
                 <div class="flex items-center justify-between text-xs text-slate-400 py-1.5 border-y border-slate-800/80 mb-3">
@@ -399,11 +464,11 @@ class AdminDashboard {
             </div>
 
             <!-- Action Buttons Footer -->
-            <div class="pt-3 border-t border-slate-800 grid grid-cols-4 gap-2">
+            <div class="pt-3 border-t border-slate-800 grid grid-cols-5 gap-1.5">
                 <button onclick="app.openRemoteViewer('${c.device_id}')" 
                     ${!isOnline ? 'disabled' : ''} 
-                    class="col-span-2 flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-md">
-                    <i class="fa-solid fa-display mr-1.5"></i> Remote
+                    class="col-span-2 flex items-center justify-center px-2.5 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-md">
+                    <i class="fa-solid fa-display mr-1"></i> Remote
                 </button>
                 
                 <button onclick="app.openTerminal('${c.device_id}')" 
@@ -418,6 +483,12 @@ class AdminDashboard {
                     title="Process / Task Manager"
                     class="flex items-center justify-center p-2 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition border border-slate-700">
                     <i class="fa-solid fa-list-check"></i>
+                </button>
+
+                <button onclick="app.openNoteModal('${c.device_id}')" 
+                    title="Beri Nama & Catatan PC"
+                    class="flex items-center justify-center p-2 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 transition border border-slate-700 hover:text-amber-300">
+                    <i class="fa-solid fa-pen-to-square"></i>
                 </button>
             </div>
             
@@ -458,8 +529,9 @@ class AdminDashboard {
         this.activeTerminalClientId = clientId;
         const client = this.clients.get(clientId);
         document.getElementById("terminalModal").classList.remove("hidden");
-        document.getElementById("terminalTargetName").textContent = `${client.hostname} (${client.ip_address}) [${client.os_type === 'windows' ? 'cmd/powershell' : 'bash'}]`;
-        document.getElementById("terminalOutput").textContent = `Connected to remote shell on ${client.hostname}...\nType commands and press Enter.\n\n`;
+        const displayName = client.alias ? `${client.alias} (${client.hostname})` : (client.hostname || 'Device');
+        document.getElementById("terminalTargetName").textContent = `${displayName} (${client.ip_address}) [${client.os_type === 'windows' ? 'cmd/powershell' : 'bash'}]`;
+        document.getElementById("terminalOutput").textContent = `Connected to remote shell on ${displayName}...\nType commands and press Enter.\n\n`;
         document.getElementById("terminalInput").value = "";
         document.getElementById("terminalInput").focus();
     }
@@ -507,7 +579,8 @@ class AdminDashboard {
         this.activeProcessClientId = clientId;
         const client = this.clients.get(clientId);
         document.getElementById("processModal").classList.remove("hidden");
-        document.getElementById("processTargetName").textContent = `${client.hostname} (${client.ip_address})`;
+        const displayName = client.alias ? `${client.alias} (${client.hostname})` : (client.hostname || 'Device');
+        document.getElementById("processTargetName").textContent = `${displayName} (${client.ip_address})`;
         await this.refreshProcessList();
     }
 
@@ -731,13 +804,70 @@ class AdminDashboard {
         }
     }
 
+    // --- Device Note & Alias Modal ---
+    openNoteModal(clientId) {
+        const client = this.clients.get(clientId);
+        if (!client) return;
+
+        document.getElementById("noteClientId").value = clientId;
+        document.getElementById("noteAliasInput").value = client.alias || "";
+        document.getElementById("noteTextInput").value = client.note || "";
+        document.getElementById("noteModalSubtitle").textContent = `${client.hostname || 'Device'} (${client.ip_address || '-'}) • ID: ${clientId}`;
+        
+        document.getElementById("noteModal").classList.remove("hidden");
+        document.getElementById("noteAliasInput").focus();
+    }
+
+    closeNoteModal() {
+        document.getElementById("noteModal").classList.add("hidden");
+    }
+
+    async submitNoteForm() {
+        const clientId = document.getElementById("noteClientId").value;
+        const alias = document.getElementById("noteAliasInput").value.trim();
+        const note = document.getElementById("noteTextInput").value.trim();
+        if (!clientId) return;
+
+        try {
+            const res = await this.authFetch(`/api/client/${clientId}/note?token=${encodeURIComponent(this.token)}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ alias, note })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                // Update local client map
+                const client = this.clients.get(clientId);
+                if (client) {
+                    client.alias = alias;
+                    client.note = note;
+                }
+                this.closeNoteModal();
+                this.renderDashboard();
+                this.showToast(alias ? `Nama PC diubah: "${alias}"` : "Catatan PC diperbarui!");
+            } else {
+                alert("Gagal menyimpan catatan: " + (data.detail || "Error"));
+            }
+        } catch (e) {
+            console.error("Error updating note:", e);
+            alert("Terjadi kesalahan saat menyimpan catatan: " + e.message);
+        }
+    }
+
+    showToast(message, isError = false) {
+        const toast = document.getElementById("toast");
+        if (!toast) return;
+        toast.textContent = message;
+        toast.className = `fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-2xl transition-all duration-300 ${
+            isError ? "bg-rose-600 text-white" : "bg-indigo-600 text-white"
+        }`;
+        toast.classList.remove("opacity-0", "pointer-events-none");
+        setTimeout(() => toast.classList.add("opacity-0", "pointer-events-none"), 2500);
+    }
+
     copyText(text) {
         navigator.clipboard.writeText(text);
-        // Show brief toast
-        const toast = document.getElementById("toast");
-        toast.textContent = `Copied IP: ${text}`;
-        toast.classList.remove("opacity-0", "pointer-events-none");
-        setTimeout(() => toast.classList.add("opacity-0", "pointer-events-none"), 1800);
+        this.showToast(`IP disalin: ${text}`);
     }
 }
 

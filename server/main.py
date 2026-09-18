@@ -66,6 +66,10 @@ class SettingsUpdateRequest(BaseModel):
     session_timeout_hours: Optional[int] = None
     remember_days: Optional[int] = None
 
+class ClientNoteRequest(BaseModel):
+    alias: Optional[str] = ""
+    note: Optional[str] = ""
+
 # --- Background Task: LAN UDP Broadcast Beacon ---
 async def udp_beacon_loop():
     """Broadcasts a beacon every 3 seconds so clients on LAN can discover this server automatically."""
@@ -288,6 +292,18 @@ async def power_action(client_id: str, req: PowerRequest):
     }
     sent = await client_manager.send_to_client(client_id, payload)
     return {"success": sent, "action": req.action}
+
+@app.post("/api/client/{client_id}/note")
+async def update_client_note(client_id: str, req: ClientNoteRequest, token: Optional[str] = None):
+    """Updates device custom name/alias and note, saving across restarts."""
+    if not verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    updated = client_manager.set_device_note(client_id, req.alias or "", req.note or "")
+    await client_manager.broadcast_to_admins({
+        "type": "client_updated",
+        "client": updated
+    })
+    return {"success": True, "client": updated}
 
 # --- WebSocket Endpoints ---
 

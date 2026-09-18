@@ -1,0 +1,12 @@
+{
+    "test-node-1": {
+        "alias": "",
+        "note": "",
+        "hostname": "DESKTOP-7HLJNLG",
+        "username": "user",
+        "os_name": "Windows 11",
+        "os_type": "windows",
+        "ip_address": "192.168.8.251",
+        "last_seen": 1789702239.3398743
+    }
+}

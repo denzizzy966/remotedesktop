@@ -118,6 +118,8 @@ class RemoteClient:
 
     def load_config(self):
         """Loads configuration from config.json if present."""
+        if self.server_url:
+            return
         cfg_file = get_config_file_path()
         if os.path.exists(cfg_file):
             try:
