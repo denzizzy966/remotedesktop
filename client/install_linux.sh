@@ -1,14 +1,19 @@
 #!/bin/bash
-# Installer for Ubuntu 22.04 LTS / Linux Mint 22
+# ================================================================
+#  INSTALLER LAN REMOTE DESKTOP - CLIENT AGENT
+#  Target OS: Ubuntu 22.04 LTS / Linux Mint 22 (X11 / Xorg)
+# ================================================================
 
-
-echo "=========================================================="
-echo " Installing LAN Remote Desktop Client for Linux"
-echo " (Ubuntu 22.04 LTS / Linux Mint 22)"
-echo "=========================================================="
+set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+
+echo "=========================================================="
+echo " INSTALLER LAN REMOTE DESKTOP - CLIENT AGENT (LINUX)"
+echo " Target OS: Ubuntu 22.04 LTS / Linux Mint 22"
+echo "=========================================================="
+echo ""
 
 # Helper to wait if Ubuntu background auto-updates (unattended-upgrades) is holding the lock
 wait_for_apt_lock() {
@@ -30,10 +35,10 @@ wait_for_apt_lock() {
 }
 
 # 1. Update apt & install system packages (Hanya jika belum terpasang)
-if command -v python3 >/dev/null 2>&1 && command -v pip3 >/dev/null 2>&1 && python3 -c "import tkinter" >/dev/null 2>&1; then
-    echo "[1/5] Python 3, pip3, dan modul antarmuka sistem sudah terpasang ($(python3 --version))."
+if command -v python3 >/dev/null 2>&1 && command -v pip3 >/dev/null 2>&1 && python3 -c "import tkinter, gi" >/dev/null 2>&1; then
+    echo "[1/6] Python 3, pip3, dan modul antarmuka sistem sudah terpasang ($(python3 --version))."
 else
-    echo "[1/5] Updating system packages & installing required system dependencies..."
+    echo "[1/6] Memasang paket dependensi sistem (Python, Tkinter, AppIndicator)..."
     wait_for_apt_lock
     sudo apt-get update -o Acquire::ForceIPv4=true || true
     wait_for_apt_lock
@@ -47,6 +52,8 @@ else
         python3-gi-cairo \
         gir1.2-ayatanaappindicator3-0.1 \
         gir1.2-appindicator3-0.1 \
+        gir1.2-gtk-3.0 \
+        libayatana-appindicator3-1 \
         scrot \
         libx11-dev \
         libxtst-dev \
@@ -58,7 +65,8 @@ echo ""
 python3 -c "import sys; print('Python terdeteksi:', sys.version.split()[0])"
 echo ""
 
-echo "[2/5] Installing Python requirements (Online or Offline)..."
+# 2. Install pip requirements (Offline or Online)
+echo "[2/6] Memasang pustaka Python client..."
 if [ -d "$SCRIPT_DIR/offline_packages" ]; then
     echo "[OFFLINE MODE] Folder 'client/offline_packages' terdeteksi!"
     echo "Memasang dependensi client langsung dari cache lokal (tanpa perlu koneksi internet)..."
@@ -72,9 +80,12 @@ elif [ -f "$ROOT_DIR/requirements.txt" ]; then
 else
     pip3 install websockets psutil mss pillow pynput pyautogui pyperclip requests pystray || pip3 install --break-system-packages websockets psutil mss pillow pynput pyautogui pyperclip requests pystray
 fi
+echo "Dependensi client berhasil dipasang!"
+echo ""
 
-echo "[3/5] Konfigurasi Koneksi Server Admin..."
-echo "Secara bawaan, client akan otomatis mencari Server di LAN via UDP."
+# 3. Konfigurasi Koneksi Server Admin
+echo "[3/6] Konfigurasi Koneksi Server Admin..."
+echo "Secara bawaan, client akan otomatis mencari Server di LAN via UDP beacon."
 read -p "Masukkan IP Server Admin (kosongkan jika ingin Auto-Discovery): " TARGET_IP
 if [ -n "$TARGET_IP" ]; then
     read -p "Masukkan Port Server Admin (default 8001): " TARGET_PORT
@@ -103,43 +114,27 @@ EOF
 fi
 echo ""
 
-echo "[4/5] Creating client launcher script..."
-cat << 'EOF' > "$SCRIPT_DIR/run_client.sh"
-#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# 4. Buat runner script client & settings
+echo "[4/6] Menyiapkan launcher script..."
+chmod +x "$SCRIPT_DIR/run_client.sh" "$SCRIPT_DIR/settings.sh" "$SCRIPT_DIR/status_client.sh" "$SCRIPT_DIR/start_client.sh" "$SCRIPT_DIR/stop_client.sh" "$SCRIPT_DIR/install_client_service.sh" "$SCRIPT_DIR/uninstall_client_service.sh" 2>/dev/null || true
 
-if [ "$EUID" -eq 0 ]; then
-    echo "================================================================"
-    echo " [PERINGATAN] Jangan jalankan client agent dengan 'sudo'!"
-    echo "  System Tray dan antarmuka GUI memerlukan akses ke sesi desktop"
-    echo "  pengguna biasa (X11 & DBus)."
-    echo "================================================================"
-    if [ -n "$SUDO_USER" ]; then
-        echo "Beralih otomatis ke user '$SUDO_USER'..."
-        exec sudo -u "$SUDO_USER" env DISPLAY="${DISPLAY:-:0}" XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" "$0" "$@"
-    fi
-fi
-
-# Ensure DISPLAY is set for X11 screen capture
-export DISPLAY="${DISPLAY:-:0}"
-python3 client.py "$@"
-EOF
-chmod +x "$SCRIPT_DIR/run_client.sh"
-
-echo "[5/5] Setting up Desktop Autostart entry (optional)..."
+# 5. Pasang Shortcut Desktop & Menu Aplikasi
+echo "[5/6] Memasang Shortcut di Desktop dan Menu Aplikasi Linux..."
 if [ -n "$SUDO_USER" ]; then
     USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    DESKTOP_OWNER="$SUDO_USER"
 else
     USER_HOME="$HOME"
+    DESKTOP_OWNER="$USER"
 fi
 
 AUTOSTART_DIR="$USER_HOME/.config/autostart"
-mkdir -p "$AUTOSTART_DIR"
+APPS_DIR="$USER_HOME/.local/share/applications"
+DESKTOP_DIR="$USER_HOME/Desktop"
+mkdir -p "$AUTOSTART_DIR" "$APPS_DIR" "$DESKTOP_DIR"
 
-DESKTOP_FILE="$AUTOSTART_DIR/lan-remotedesktop-client.desktop"
-cat << EOF > "$DESKTOP_FILE"
-[Desktop Entry]
+# 5.A Shortcut Client
+CLIENT_DESKTOP_CONTENT="[Desktop Entry]
 Type=Application
 Exec=$SCRIPT_DIR/run_client.sh
 Hidden=false
@@ -150,21 +145,76 @@ Comment=Background agent for LAN Remote Desktop & Monitoring
 Icon=preferences-desktop-remote-desktop
 Terminal=false
 Categories=Network;Utility;
-EOF
+"
+
+echo "$CLIENT_DESKTOP_CONTENT" > "$AUTOSTART_DIR/lan-remotedesktop-client.desktop"
+echo "$CLIENT_DESKTOP_CONTENT" > "$APPS_DIR/lan-remotedesktop-client.desktop"
+echo "$CLIENT_DESKTOP_CONTENT" > "$DESKTOP_DIR/lan-remotedesktop-client.desktop"
+
+# 5.B Shortcut Pengaturan Server (Ganti IP GUI)
+SETTINGS_DESKTOP_CONTENT="[Desktop Entry]
+Type=Application
+Exec=$SCRIPT_DIR/settings.sh
+Hidden=false
+NoDisplay=false
+Name=Pengaturan Server LAN Remote
+Comment=Ganti IP dan Port Server Admin LAN Remote Desktop
+Icon=preferences-system-network
+Terminal=false
+Categories=Network;Settings;
+"
+
+echo "$SETTINGS_DESKTOP_CONTENT" > "$APPS_DIR/lan-remotedesktop-settings.desktop"
+echo "$SETTINGS_DESKTOP_CONTENT" > "$DESKTOP_DIR/lan-remotedesktop-settings.desktop"
+
+# Set permissions
+chmod +x "$AUTOSTART_DIR/lan-remotedesktop-client.desktop" "$APPS_DIR/lan-remotedesktop-client.desktop" "$DESKTOP_DIR/lan-remotedesktop-client.desktop" 2>/dev/null || true
+chmod +x "$APPS_DIR/lan-remotedesktop-settings.desktop" "$DESKTOP_DIR/lan-remotedesktop-settings.desktop" 2>/dev/null || true
+
+# Mark desktop file trusted if gio is present
+if command -v gio >/dev/null 2>&1; then
+    gio set "$DESKTOP_DIR/lan-remotedesktop-client.desktop" metadata::trusted true 2>/dev/null || true
+    gio set "$DESKTOP_DIR/lan-remotedesktop-settings.desktop" metadata::trusted true 2>/dev/null || true
+fi
 
 if [ -n "$SUDO_USER" ]; then
-    chown -R "$SUDO_USER:$SUDO_USER" "$AUTOSTART_DIR"
+    chown -R "$DESKTOP_OWNER:$DESKTOP_OWNER" "$AUTOSTART_DIR" "$APPS_DIR" "$DESKTOP_DIR" 2>/dev/null || true
 fi
-chmod +x "$DESKTOP_FILE"
+
+# 6. Opsi Pasang sebagai Systemd Service
+echo ""
+echo "[6/6] Aktivasi Layanan Background Service..."
+echo "PILIHAN MODE MENJALANKAN CLIENT:"
+echo " 1. SYSTEMD SERVICE (Direkomendasikan): Berjalan otomatis 24/7 di background dan saat boot."
+echo " 2. DESKTOP AUTOSTART: Berjalan di background setiap kali user login ke desktop."
+echo ""
+read -p "Pasang sebagai Systemd Service sekarang? (Y/n, default: Y): " INSTALL_SERVICE_CHOICE
+INSTALL_SERVICE_CHOICE=${INSTALL_SERVICE_CHOICE:-Y}
+
+if [[ "$INSTALL_SERVICE_CHOICE" =~ ^[Yy]$ ]]; then
+    echo "Menyiapkan systemd service..."
+    bash "$SCRIPT_DIR/install_client_service.sh"
+else
+    echo "Memulai client di latar belakang..."
+    bash "$SCRIPT_DIR/start_client.sh"
+fi
 
 echo ""
 echo "=========================================================="
-echo " Installation Complete!"
-echo " To start the client manually, run:"
-echo "   $SCRIPT_DIR/run_client.sh"
-echo ""
-echo " Note for Ubuntu: Please ensure you are logged into an"
-echo " 'Xorg' session (select Ubuntu on Xorg on the login gear icon)"
-echo " for full remote screen capture and mouse/keyboard injection."
-echo " Linux Mint 22 Cinnamon uses X11 by default."
+echo "          INSTALASI CLIENT LINUX SELESAI!"
 echo "=========================================================="
+echo ""
+echo " 📋 INFORMASI STATUS & LAYANAN YANG BERJALAN:"
+echo "  - Nama Systemctl Service : lan-remotedesktop-client"
+echo "  - Cek Status Service     : sudo systemctl status lan-remotedesktop-client"
+echo "  - Cek Status Cepat (CLI) : ./client/status_client.sh"
+echo "  - Cek Log Realtime       : sudo journalctl -u lan-remotedesktop-client -f"
+echo ""
+echo " 🖥️ PENGATURAN GANTI IP SERVER (GUI):"
+echo "  - Dobel klik shortcut 'Pengaturan Server LAN Remote' di Desktop Anda!"
+echo "  - Atau dari terminal jalankan: ./client/settings.sh"
+echo ""
+echo "  - Untuk menghentikan client : ./client/stop_client.sh"
+echo "  - Untuk menyalakan kembali  : ./client/start_client.sh"
+echo "=========================================================="
+echo ""

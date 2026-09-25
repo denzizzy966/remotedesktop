@@ -258,7 +258,7 @@ C. CARA MENGAKTIFKAN AUTOSTART SAAT BOOT / LOGIN DI LINUX:
      - Delay   : 2 (detik)
   4. Klik "Save" / Simpan.
 
-D. INSTALASI LENGKAP VIA INSTALLER LINUX:
+D. INSTALASI LENGKAP VIA INSTALLER LINUX & SYSTEMD SERVICE:
  1. Salin folder `client` ke komputer Linux target.
  2. Buka Terminal di folder tersebut.
  3. Beri izin eksekusi dan jalankan script installer:
@@ -270,10 +270,33 @@ D. INSTALASI LENGKAP VIA INSTALLER LINUX:
     - Installer secara otomatis mendeteksi paket offline lokal tersebut dan memasang
       seluruh dependensi tanpa butuh koneksi internet!
  4. Masukkan IP Server Admin dan Port saat diminta (atau kosongkan untuk auto-discovery).
- 5. Installer akan mengonfigurasi autostart desktop secara otomatis di
-    `~/.config/autostart/lan-remotedesktop-client.desktop`.
- 6. Untuk menjalankan manual kapan saja:
-      ./run_client.sh
+ 5. Installer akan otomatis:
+    - Menaruh shortcut Desktop: "LAN Remote Desktop Client" & "Pengaturan Server LAN Remote"
+    - Menanyakan aktivasi Systemd Service (Otomatis berjalan 24/7 di latar belakang).
+ 
+ ===============================================================================
+ SYSTEMD SERVICE CLIENT (systemctl) & CEK STATUS:
+ ===============================================================================
+ Nama Service Systemctl : lan-remotedesktop-client
+ Perintah Manajemen Service:
+  - Cek Status Service  : sudo systemctl status lan-remotedesktop-client
+  - Cek Log Realtime    : sudo journalctl -u lan-remotedesktop-client -f
+  - Restart Service     : sudo systemctl restart lan-remotedesktop-client
+  - Berhentikan Service : sudo systemctl stop lan-remotedesktop-client
+  - Cek Status Cepat    : ./client/status_client.sh
+
+ ===============================================================================
+ CARA GANTI IP SERVER DARI GUI (JIKA TRAY TIDAK MUNCUL):
+ ===============================================================================
+ Anda tidak perlu bergantung pada System Tray untuk mengganti IP!
+ Anda memiliki 2 cara sangat mudah:
+ 1. Melalui Shortcut Desktop:
+    Dobel klik shortcut "Pengaturan Server LAN Remote" di Desktop Linux Mint / Ubuntu Anda.
+ 2. Melalui Terminal:
+    Jalankan perintah:
+      ./client/settings.sh
+    Jendela GUI modern akan muncul seketika. Ketik IP Server baru dan klik "Simpan & Sambungkan".
+    Client yang berjalan di latar belakang akan otomatis langsung berpindah ke IP baru!
 
 E. OPSI MODE HEADLESS (TANPA GUI / SYSTEM TRAY):
  Jika client dipasang pada mesin Linux Server tanpa monitor/GUI desktop (X11):
@@ -284,6 +307,13 @@ E. OPSI MODE HEADLESS (TANPA GUI / SYSTEM TRAY):
 F. RINGKASAN FILE KOMPONEN CLIENT:
  - `client/client.py`            : Kode utama agent remote desktop client
  - `client/tray_icon.py`         : Modul pembuat ikon monitor dinamis & menu tray
+ - `client/settings_ui.py`       : Jendela antarmuka grafis (GUI) ganti IP & Port
+ - `client/settings.sh`          : Peluncur 1-klik GUI ganti IP Server Linux
+ - `client/status_client.sh`     : Skrip inspeksi status service & proses client
+ - `client/start_client.sh`      : Skrip penyala client di background
+ - `client/stop_client.sh`       : Skrip penghenti client
+ - `client/install_client_service.sh`   : Installer systemd service client
+ - `client/uninstall_client_service.sh` : Uninstaller systemd service client
  - `client/LANRemoteClient.exe`  : Executable standalone Windows (sudah include tray)
  - `client/setup_autostart_linux.sh` : Skrip 1-klik pendaftaran autostart Linux
  - `client/run_client.sh`        : Skrip starter client Linux dengan auto DISPLAY :0

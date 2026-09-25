@@ -151,10 +151,23 @@ Langkah-langkah:
     - Installer secara otomatis mendeteksi paket offline lokal tersebut dan memasangnya
       tanpa perlu koneksi internet!
  4. Masukkan IP Server Admin dan Port saat diminta (atau kosongkan untuk auto-discovery).
- 5. Installer akan mengonfigurasi autostart desktop secara otomatis di
-    `~/.config/autostart/lan-remotedesktop-client.desktop`.
- 6. Untuk menjalankan manual kapan saja:
-      ./run_client.sh
+ 5. Installer secara otomatis:
+    - Membuat shortcut Desktop "LAN Remote Desktop Client" & "Pengaturan Server LAN Remote".
+    - Menawarkan aktivasi Systemd Service (Otomatis aktif 24/7 dan saat boot).
+
+ ===============================================================================
+ SYSTEMD SERVICE CLIENT (systemctl):
+ ===============================================================================
+ Nama Service Systemctl : lan-remotedesktop-client
+  - Cek Status Service  : sudo systemctl status lan-remotedesktop-client
+  - Cek Log Realtime    : sudo journalctl -u lan-remotedesktop-client -f
+  - Restart Service     : sudo systemctl restart lan-remotedesktop-client
+  - Hentikan Service    : sudo systemctl stop lan-remotedesktop-client
+  - Cek Status Cepat    : ./status_client.sh
+
+ CARA GANTI IP SERVER DARI GUI:
+  - Dobel klik shortcut "Pengaturan Server LAN Remote" di Desktop!
+  - Atau dari terminal jalankan: ./settings.sh
 
 ================================================================================
 6. PANDUAN INSTALASI SERVER ADMIN (WINDOWS 10 / 11)

@@ -1,15 +1,35 @@
 import os
 import sys
+import time
 import webbrowser
 import threading
 from PIL import Image, ImageDraw
 
-# Try importing pystray
+# On Linux, configure backend for pystray before importing it
+if sys.platform.startswith("linux"):
+    if "PYSTRAY_BACKEND" not in os.environ:
+        os.environ["PYSTRAY_BACKEND"] = "appindicator"
+
+# Try importing pystray with backend fallback
+PYSTRAY_AVAILABLE = False
 try:
     import pystray
     PYSTRAY_AVAILABLE = True
-except ImportError:
-    PYSTRAY_AVAILABLE = False
+except Exception:
+    if sys.platform.startswith("linux"):
+        try:
+            os.environ["PYSTRAY_BACKEND"] = "gtk"
+            import pystray
+            PYSTRAY_AVAILABLE = True
+        except Exception:
+            try:
+                os.environ["PYSTRAY_BACKEND"] = "xorg"
+                import pystray
+                PYSTRAY_AVAILABLE = True
+            except Exception:
+                PYSTRAY_AVAILABLE = False
+    else:
+        PYSTRAY_AVAILABLE = False
 
 try:
     import pyperclip
@@ -65,6 +85,7 @@ class ClientTrayIcon:
         self.icon = None
         self.connected = False
         self.server_display = "Searching..."
+        self._running = False
 
     def is_available(self):
         return PYSTRAY_AVAILABLE
@@ -95,12 +116,7 @@ class ClientTrayIcon:
 
     def _on_exit(self, icon, item):
         print("\n[Tray] User requested exit via system tray.")
-        if self.icon:
-            try:
-                self.icon.stop()
-            except Exception:
-                pass
-        # Gracefully exit process
+        self.stop()
         os._exit(0)
 
     def _build_menu(self):
@@ -118,25 +134,41 @@ class ClientTrayIcon:
         )
 
     def start(self):
-        """Starts the tray icon in a background detached thread."""
+        """Starts the tray icon in a dedicated daemon thread with automatic retry logic."""
         if not PYSTRAY_AVAILABLE:
-            print("[Tray] Pystray belum terpasang. Menjalankan tanpa icon system tray.")
+            print("[Tray] Pystray / AppIndicator belum terpasang atau tidak tersedia.")
+            print("[Tray] Tips: Untuk mengubah IP Server kapan saja, jalankan: ./settings.sh")
             return
 
-        try:
-            img = create_tray_image(connected=False)
-            self.icon = pystray.Icon(
-                name="lan_remote_client",
-                icon=img,
-                title="LAN Remote Desktop Client - Disconnected",
-                menu=self._build_menu()
-            )
-            # Run detached in a background thread
-            self.icon.run_detached()
-            print("[Tray] System tray icon aktif.")
-        except Exception as e:
-            print(f"[Tray] Gagal memuat system tray: {e}")
-            self.icon = None
+        def _run_tray():
+            max_attempts = 5
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    img = create_tray_image(connected=self.connected)
+                    self.icon = pystray.Icon(
+                        name="lan_remote_client",
+                        icon=img,
+                        title=f"LAN Remote Desktop Client ({self.server_display})",
+                        menu=self._build_menu()
+                    )
+                    self._running = True
+                    print(f"[Tray] System tray icon aktif ({os.environ.get('PYSTRAY_BACKEND', 'default')}).")
+                    if sys.platform == "win32":
+                        self.icon.run_detached()
+                    else:
+                        self.icon.run() # Dedicated thread runs event loop
+                    return
+                except Exception as e:
+                    print(f"[Tray] Percobaan {attempt}/{max_attempts} gagal ({e}).")
+                    self.icon = None
+                    self._running = False
+                    if attempt < max_attempts:
+                        time.sleep(3)
+
+            print("[Tray] Info: Tray icon tidak dapat dimuat pada desktop ini. Client tetap berjalan normal di background.")
+            print("[Tray] Tips: Anda tetap bisa membuka GUI Pengaturan IP/Port kapan saja via: ./settings.sh")
+
+        threading.Thread(target=_run_tray, daemon=True, name="TrayIconThread").start()
 
     def update_status(self, connected: bool, server_str: str = ""):
         """Updates the tray icon image and tooltip dynamically."""
@@ -144,7 +176,7 @@ class ClientTrayIcon:
         if server_str:
             self.server_display = server_str
         
-        if self.icon:
+        if self.icon and self._running:
             try:
                 self.icon.icon = create_tray_image(connected)
                 status_text = "Connected" if connected else "Connecting..."
@@ -153,6 +185,7 @@ class ClientTrayIcon:
                 pass
 
     def stop(self):
+        self._running = False
         if self.icon:
             try:
                 self.icon.stop()

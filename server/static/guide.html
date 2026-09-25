@@ -482,7 +482,40 @@ pip3 install pystray --break-system-packages</code></pre>
                     </p>
                 </div>
 
-                <!-- 5.E & 5.F -->
+                <!-- 5.E Systemd Service Client & GUI Settings -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs mb-6">
+                    <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-4">
+                        <h4 class="font-semibold text-white mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-gear text-indigo-400"></i>
+                            Systemd Service Client (systemctl)
+                        </h4>
+                        <p class="text-slate-300 mb-2">Nama service client adalah <code class="text-indigo-300 font-mono">lan-remotedesktop-client</code>:</p>
+                        <ul class="space-y-1 font-mono text-[11px] text-indigo-200">
+                            <li><span class="text-slate-400"># Cek status:</span><br>sudo systemctl status lan-remotedesktop-client</li>
+                            <li><span class="text-slate-400"># Cek log:</span><br>sudo journalctl -u lan-remotedesktop-client -f</li>
+                            <li><span class="text-slate-400"># Pasang service manual:</span><br>sudo ./client/install_client_service.sh</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-cyan-950/30 border border-cyan-500/30 rounded-xl p-4">
+                        <h4 class="font-semibold text-white mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-cyan-400"></i>
+                            Ganti IP Server dari GUI (Tanpa Tray)
+                        </h4>
+                        <p class="text-slate-300 mb-2 leading-relaxed">
+                            Jika System Tray tidak muncul, Anda tetap dapat mengganti IP Server kapan saja:
+                        </p>
+                        <ul class="space-y-1.5 text-slate-300 text-[11px]">
+                            <li>&bull; Dobel klik shortcut <strong>"Pengaturan Server LAN Remote"</strong> di Desktop Linux Anda.</li>
+                            <li>&bull; Atau jalankan di terminal: <code class="text-cyan-300 font-mono bg-slate-900 px-1 py-0.5 rounded">./client/settings.sh</code></li>
+                        </ul>
+                        <p class="text-[10px] text-slate-400 mt-2">
+                            Jendela GUI modern akan langsung muncul untuk mengubah IP & Port.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 5.F & 5.G -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
                         <h4 class="font-semibold text-white mb-1 flex items-center gap-1.5">

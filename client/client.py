@@ -20,6 +20,35 @@ for p in [APP_DIR, PARENT_DIR]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
+# Auto-detect Linux display, Xauthority, and session D-Bus (ensures systemd / background runs have GUI access)
+if sys.platform.startswith("linux"):
+    if "DISPLAY" not in os.environ:
+        os.environ["DISPLAY"] = ":0"
+    if "XAUTHORITY" not in os.environ:
+        home_path = os.path.expanduser("~")
+        std_xauth = os.path.join(home_path, ".Xauthority")
+        if os.path.exists(std_xauth):
+            os.environ["XAUTHORITY"] = std_xauth
+        else:
+            try:
+                uid = os.getuid()
+                for cand in [f"/run/user/{uid}/gdm/Xauthority", f"/run/user/{uid}/.Xauthority"]:
+                    if os.path.exists(cand):
+                        os.environ["XAUTHORITY"] = cand
+                        break
+            except Exception:
+                pass
+    if "DBUS_SESSION_BUS_ADDRESS" not in os.environ:
+        try:
+            uid = os.getuid()
+            bus_path = f"/run/user/{uid}/bus"
+            if os.path.exists(bus_path):
+                os.environ["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path={bus_path}"
+        except Exception:
+            pass
+    if "PYSTRAY_BACKEND" not in os.environ:
+        os.environ["PYSTRAY_BACKEND"] = "appindicator"
+
 def get_config_file_path():
     """Finds config.json in APP_DIR, current working directory, or script directory."""
     candidates = [
@@ -104,9 +133,11 @@ except ImportError:
 class RemoteClient:
     def __init__(self, server_url=None, auto_discover=None, enable_tray=True):
         self.device_id = get_device_id()
+        self.explicit_server_url = server_url is not None
         self.server_url = server_url
         self.auto_discover = auto_discover
         self.enable_tray = enable_tray
+        self._last_cfg_mtime = 0
         self.ws = None
         self.loop = None
         self.screen_capture = ScreenCapture()
@@ -118,7 +149,7 @@ class RemoteClient:
         self.stream_quality = 60
         self.stream_fps = 20
         self.stream_monitor = 1
-        self.load_config()
+        self.load_config(force=True)
         if self.auto_discover is None:
             self.auto_discover = True
 
@@ -144,44 +175,57 @@ class RemoteClient:
             except Exception as e:
                 print(f"[Config] Reconnect notice: {e}")
 
-    def load_config(self):
-        """Loads configuration from config.json if present."""
-        if self.server_url:
+    def load_config(self, force=False):
+        """Loads configuration from config.json if present, reloading dynamically if modified."""
+        if self.explicit_server_url:
             return
         cfg_file = get_config_file_path()
-        if os.path.exists(cfg_file):
-            try:
-                with open(cfg_file, "r") as f:
-                    cfg = json.load(f)
+        if not os.path.exists(cfg_file):
+            return
+        try:
+            mtime = os.path.getmtime(cfg_file)
+            if not force and self._last_cfg_mtime == mtime:
+                return
+            old_url = self.server_url
+            self._last_cfg_mtime = mtime
+            with open(cfg_file, "r") as f:
+                cfg = json.load(f)
 
-                    # 1. Check server_ip first (takes priority so manual user edits are respected!)
-                    server_ip_raw = cfg.get("server_ip")
-                    if server_ip_raw:
-                        clean_ip = parse_ip_address(server_ip_raw)
-                        if clean_ip:
-                            port = int(cfg.get("server_port", 8001))
-                            self.server_url = f"ws://{clean_ip}:{port}/ws/client/{self.device_id}"
-                            self.auto_discover = False
-                        else:
-                            print(f"[Config Warning] Nilai 'server_ip' di {cfg_file} tidak valid: '{server_ip_raw}'. Contoh yang benar: 192.168.8.251")
+            # 1. Check server_ip first (takes priority so manual user edits are respected!)
+            server_ip_raw = cfg.get("server_ip")
+            if server_ip_raw:
+                clean_ip = parse_ip_address(server_ip_raw)
+                if clean_ip:
+                    port = int(cfg.get("server_port", 8001))
+                    self.server_url = f"ws://{clean_ip}:{port}/ws/client/{self.device_id}"
+                    self.auto_discover = False
+                else:
+                    print(f"[Config Warning] Nilai 'server_ip' di {cfg_file} tidak valid: '{server_ip_raw}'. Contoh yang benar: 192.168.8.251")
+            elif cfg.get("server_url"):
+                raw_url = cfg["server_url"].strip()
+                if raw_url:
+                    self.server_url = raw_url
+                    self.auto_discover = False
+            else:
+                self.server_url = None
+                self.auto_discover = cfg.get("auto_discover", True)
 
-                    # 2. If server_url was explicitly provided without server_ip
-                    elif not self.server_url and cfg.get("server_url"):
-                        raw_url = cfg["server_url"].strip()
-                        if raw_url:
-                            self.server_url = raw_url
-                            self.auto_discover = False
+            # 2. Guarantee that the WebSocket URL always targets THIS machine's hardware ID
+            if self.server_url and "/ws/client/" in self.server_url:
+                base_ws = self.server_url.split("/ws/client/")[0]
+                self.server_url = f"{base_ws}/ws/client/{self.device_id}"
 
-                    # 3. Guarantee that the WebSocket URL always targets THIS machine's hardware ID
-                    if self.server_url and "/ws/client/" in self.server_url:
-                        base_ws = self.server_url.split("/ws/client/")[0]
-                        self.server_url = f"{base_ws}/ws/client/{self.device_id}"
+            # 3. Auto-discovery flag
+            if "auto_discover" in cfg and not server_ip_raw:
+                self.auto_discover = cfg["auto_discover"]
 
-                    # 4. Auto-discovery flag
-                    if "auto_discover" in cfg and not server_ip_raw:
-                        self.auto_discover = cfg["auto_discover"]
-            except Exception as e:
-                print(f"[Config] Error reading config.json ({cfg_file}): {e}")
+            if old_url != self.server_url and old_url is not None:
+                print(f"[Config] Konfigurasi server diperbarui: {self.server_url or 'Auto-Discovery'}")
+                if self.tray:
+                    srv_str = self.server_url.split('/ws/')[0].replace('ws://', '').replace('wss://', '') if self.server_url else "Auto-Discovery"
+                    self.tray.update_status(connected=False, server_str=srv_str)
+        except Exception as e:
+            print(f"[Config] Error reading config.json ({cfg_file}): {e}")
 
     def save_config(self):
         """Saves current configuration to config.json."""
@@ -252,6 +296,9 @@ class RemoteClient:
             self.tray.start()
 
         while True:
+            # Reload configuration if modified by settings GUI or user
+            self.load_config()
+
             target_url = None
             
             # If server_url is configured, connect to it directly!

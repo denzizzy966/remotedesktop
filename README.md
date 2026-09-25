@@ -201,15 +201,16 @@ Folder `client\offline_packages` telah berisi seluruh file `.whl` dependensi yan
    *Script ini otomatis:*
    - **Mode Offline Otomatis**: Mendeteksi folder `client/offline_packages` dan memasang pustaka binary wheel Linux x86_64 (`pillow`, `websockets`, `psutil`, `charset-normalizer`, `pystray`, `pyautogui`, dll.) untuk Python 3.10 dan 3.12 tanpa butuh koneksi internet.
    - **Bypass Apt Cerdas**: Melewati `apt-get update` jika paket dasar sudah ada, mencegah benturan dengan `unattended-upgrades`.
-   - Mengonfigurasi autostart desktop otomatis di `~/.config/autostart`.
-4. Jalankan client:
-   ```bash
-   ./client/run_client.sh
-   ```
-   Atau dengan manual target IP:
-   ```bash
-   python3 -m client.client --server ws://192.168.1.50:8000/ws/client/linux-pc-1
-   ```
+   - **Shortcut Desktop Otomatis**: Menambahkan shortcut *"LAN Remote Desktop Client"* dan *"Pengaturan Server LAN Remote"* langsung ke Desktop dan Menu Aplikasi Linux.
+   - **Integrasi Systemd Service (24/7)**: Otomatis memasang dan mengaktifkan service systemd `lan-remotedesktop-client` sehingga client langsung berjalan di background!
+
+4. **Manajemen Client di Linux**:
+   - Cek Status Service : `sudo systemctl status lan-remotedesktop-client`
+   - Cek Status Cepat   : `./client/status_client.sh`
+   - Cek Log Realtime   : `sudo journalctl -u lan-remotedesktop-client -f`
+   - **Ganti IP Server (GUI)** : Dobel klik shortcut *"Pengaturan Server"* di Desktop, atau jalankan `./client/settings.sh`.
+   - Restart Service    : `sudo systemctl restart lan-remotedesktop-client`
+   - Hentikan Service   : `sudo systemctl stop lan-remotedesktop-client`
 
 > 💡 **Catatan untuk Ubuntu**: Pastikan sesi login menggunakan **Xorg** (klik ikon gear di pojok kanan bawah saat login Ubuntu dan pilih *"Ubuntu on Xorg"*). Linux Mint 22 Cinnamon secara bawaan sudah menggunakan X11.
 
