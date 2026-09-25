@@ -111,8 +111,27 @@ class ClientTrayIcon:
                 pass
 
     def _on_open_settings(self, icon=None, item=None):
-        if open_settings_window:
-            threading.Thread(target=open_settings_window, args=(self.client,), daemon=True).start()
+        def _launch():
+            try:
+                if open_settings_window:
+                    open_settings_window(self.client)
+                    return
+            except Exception as e:
+                print(f"[Tray] Gagal membuka settings GUI langsung: {e}")
+
+            # Fallback jika direct Tkinter gagal: panggil via subprocess
+            try:
+                import subprocess
+                if getattr(sys, 'frozen', False):
+                    subprocess.Popen([sys.executable, "--settings"])
+                else:
+                    app_dir = os.path.dirname(os.path.abspath(__file__))
+                    script_path = os.path.join(app_dir, "client.py")
+                    subprocess.Popen([sys.executable, script_path, "--settings"])
+            except Exception as ex:
+                print(f"[Tray] Gagal menjalankan fallback settings: {ex}")
+
+        threading.Thread(target=_launch, daemon=True, name="SettingsLaunchThread").start()
 
     def _on_exit(self, icon, item):
         print("\n[Tray] User requested exit via system tray.")

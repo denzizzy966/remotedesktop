@@ -47,12 +47,33 @@ def save_config(cfg):
     except Exception as e:
         return False, str(e)
 
+_active_settings_window = None
+
 def open_settings_window(client=None, on_saved_callback=None):
     """Opens a modern settings dialog to configure Server IP and Port."""
-    # Run in main thread or Tkinter event loop
+    global _active_settings_window
+    if _active_settings_window is not None:
+        try:
+            _active_settings_window.deiconify()
+            _active_settings_window.attributes("-topmost", True)
+            _active_settings_window.lift()
+            _active_settings_window.focus_force()
+            _active_settings_window.after(300, lambda: _active_settings_window.attributes("-topmost", False))
+            return
+        except Exception:
+            _active_settings_window = None
+
     cfg = load_config()
 
-    root = tk.Toplevel() if tk._default_root else tk.Tk()
+    try:
+        root = tk.Tk()
+    except Exception:
+        try:
+            root = tk.Toplevel()
+        except Exception:
+            root = tk.Tk()
+
+    _active_settings_window = root
     root.title("Pengaturan Koneksi - LAN Remote Client")
     root.geometry("460x520")
     root.resizable(False, False)
@@ -64,19 +85,31 @@ def open_settings_window(client=None, on_saved_callback=None):
     y = (root.winfo_screenheight() - 520) // 2
     root.geometry(f"+{x}+{y}")
 
-    # Window Icon if available
+    # Bring to top and focus
     try:
         root.attributes("-topmost", True)
-        root.after_idle(root.attributes, "-topmost", False)
+        root.lift()
+        root.focus_force()
+        root.after(300, lambda: root.attributes("-topmost", False))
     except Exception:
         pass
+
+    def on_window_close():
+        global _active_settings_window
+        _active_settings_window = None
+        try:
+            root.destroy()
+        except Exception:
+            pass
+
+    root.protocol("WM_DELETE_WINDOW", on_window_close)
 
     # Styling
     style = ttk.Style()
     style.theme_use("clam")
 
     # Header frame
-    header_frame = tk.Frame(root, bg="#1e293b", padx=20, py=15)
+    header_frame = tk.Frame(root, bg="#1e293b", padx=20, pady=15)
     header_frame.pack(fill="x")
 
     lbl_title = tk.Label(header_frame, text="Pengaturan Server LAN", font=("Segoe UI", 13, "bold"), fg="#f8fafc", bg="#1e293b")
@@ -85,11 +118,11 @@ def open_settings_window(client=None, on_saved_callback=None):
     lbl_sub.pack(anchor="w", pady=(2, 0))
 
     # Body frame
-    body = tk.Frame(root, bg="#0f172a", padx=20, py=15)
+    body = tk.Frame(root, bg="#0f172a", padx=20, pady=15)
     body.pack(fill="both", expand=True)
 
     # Status Row
-    status_frame = tk.Frame(body, bg="#1e293b", padx=12, py=8, highlightbackground="#334155", highlightthickness=1)
+    status_frame = tk.Frame(body, bg="#1e293b", padx=12, pady=8, highlightbackground="#334155", highlightthickness=1)
     status_frame.pack(fill="x", pady=(0, 15))
 
     current_status = "Terhubung" if (client and getattr(client, "ws", None) and not client.ws.closed) else "Tidak Terhubung"
@@ -132,7 +165,7 @@ def open_settings_window(client=None, on_saved_callback=None):
 
     # Device ID Display
     dev_id = (client.device_id if client else cfg.get("device_id")) or "Unknown"
-    dev_frame = tk.Frame(body, bg="#020617", padx=10, py=6, highlightbackground="#1e293b", highlightthickness=1)
+    dev_frame = tk.Frame(body, bg="#020617", padx=10, pady=6, highlightbackground="#1e293b", highlightthickness=1)
     dev_frame.pack(fill="x", pady=(0, 15))
     tk.Label(dev_frame, text=f"Device ID : {dev_id}", font=("Consolas", 8), fg="#94a3b8", bg="#020617").pack(side="left")
 
@@ -206,7 +239,7 @@ def open_settings_window(client=None, on_saved_callback=None):
             except Exception:
                 pass
 
-        root.destroy()
+        on_window_close()
 
     def open_web():
         ip_val = entry_ip.get().strip() or "localhost"
@@ -216,20 +249,24 @@ def open_settings_window(client=None, on_saved_callback=None):
                 ip_val = ip_val[len(prefix):]
         webbrowser.open(f"http://{ip_val}:{port_val}")
 
-    btn_frame = tk.Frame(root, bg="#1e293b", padx=20, py=12)
+    btn_frame = tk.Frame(root, bg="#1e293b", padx=20, pady=12)
     btn_frame.pack(fill="x", side="bottom")
 
     btn_web = tk.Button(btn_frame, text="Buka Web Admin", font=("Segoe UI", 9), bg="#334155", fg="#f1f5f9", relief="flat", cursor="hand2", padx=10, pady=5, command=open_web)
     btn_web.pack(side="left")
 
-    btn_cancel = tk.Button(btn_frame, text="Batal", font=("Segoe UI", 9), bg="#1e293b", fg="#94a3b8", relief="flat", cursor="hand2", padx=12, pady=5, command=root.destroy)
+    btn_cancel = tk.Button(btn_frame, text="Batal", font=("Segoe UI", 9), bg="#1e293b", fg="#94a3b8", relief="flat", cursor="hand2", padx=12, pady=5, command=on_window_close)
     btn_cancel.pack(side="right", padx=(6, 0))
 
     btn_save = tk.Button(btn_frame, text="Simpan & Sambungkan", font=("Segoe UI", 9, "bold"), bg="#4f46e5", fg="#ffffff", relief="flat", cursor="hand2", padx=14, pady=5, command=save_and_apply)
     btn_save.pack(side="right")
 
-    if not tk._default_root or root == tk._default_root:
+    try:
         root.mainloop()
+    except Exception:
+        pass
+    finally:
+        _active_settings_window = None
 
 if __name__ == "__main__":
     open_settings_window()

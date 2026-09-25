@@ -268,7 +268,7 @@ async def get_client_processes(client_id: str, limit: int = 50):
         "req_id": req_id,
         "limit": limit
     }
-    res = await client_manager.send_request_to_client(client_id, payload, timeout=6.0)
+    res = await client_manager.send_request_to_client(client_id, payload, timeout=10.0)
     return res
 
 @app.post("/api/client/{client_id}/kill_process")

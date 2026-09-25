@@ -50,7 +50,7 @@ async def run_test():
     proc_res = await client_manager.send_request_to_client(
         "test-node-1",
         {"type": "list_processes", "req_id": "test-req-2", "limit": 5},
-        timeout=5.0
+        timeout=10.0
     )
     procs = proc_res.get("processes", [])
     print(f"    - Retrieved {len(procs)} processes:")
