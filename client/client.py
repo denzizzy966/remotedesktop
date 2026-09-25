@@ -376,6 +376,13 @@ class RemoteClient:
         """Periodically collects and sends system metrics & desktop thumbnails."""
         thumb_counter = 0
         while True:
+            # Check if server configuration was changed in config.json while connected
+            if self.load_config():
+                print("[Config] Konfigurasi server diperbarui saat terhubung. Menyambung ulang ke target baru...")
+                if self.ws and not self.ws.closed:
+                    await self.ws.close()
+                break
+
             try:
                 metrics = get_system_metrics()
                 payload = {
@@ -540,6 +547,93 @@ class RemoteClient:
             except Exception as e:
                 print(f"[Receive] Error processing server message: {e}")
 
+CLIENT_INSTANCE_PORT = 49876
+_instance_socket = None
+
+def spawn_settings_gui():
+    """Launches the settings UI in an independent subprocess to avoid GUI/thread conflicts."""
+    try:
+        import subprocess
+        if getattr(sys, 'frozen', False):
+            subprocess.Popen([sys.executable, "--settings"])
+        else:
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+            script_path = os.path.join(app_dir, "client.py")
+            subprocess.Popen([sys.executable, script_path, "--settings"])
+    except Exception as e:
+        print(f"[Client] Gagal membuka settings GUI: {e}")
+
+def _start_instance_listener():
+    """Background listener for single-instance commands."""
+    global _instance_socket
+    if not _instance_socket:
+        return
+
+    import threading
+    def _listen():
+        while True:
+            try:
+                conn, _ = _instance_socket.accept()
+                data = conn.recv(1024)
+                if data:
+                    cmd = data.decode("utf-8", errors="ignore").strip()
+                    if "PING" in cmd:
+                        try:
+                            conn.sendall(b"LAN_REMOTE_ACK\n")
+                        except Exception:
+                            pass
+                    if "SETTINGS" in cmd:
+                        spawn_settings_gui()
+                conn.close()
+            except Exception:
+                break
+
+    t = threading.Thread(target=_listen, daemon=True, name="SingleInstanceListener")
+    t.start()
+
+def ensure_single_instance(args):
+    """
+    Ensures only one client agent runs per machine.
+    If already running:
+      - If --ip was passed, informs user that config was updated.
+      - If normal launch or shortcut click, triggers settings GUI and exits.
+    """
+    global _instance_socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("127.0.0.1", CLIENT_INSTANCE_PORT))
+        s.listen(5)
+        _instance_socket = s
+        _start_instance_listener()
+        return True
+    except OSError:
+        # Port already in use -> Another client instance is running!
+        try:
+            s.close()
+        except Exception:
+            pass
+
+        # Try to contact the running instance to open settings
+        try:
+            client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_sock.settimeout(2.0)
+            client_sock.connect(("127.0.0.1", CLIENT_INSTANCE_PORT))
+            client_sock.sendall(b"SETTINGS\n")
+            client_sock.close()
+        except Exception:
+            # Fallback if listener didn't respond: spawn settings directly
+            spawn_settings_gui()
+
+        if getattr(args, "ip", None):
+            print(f"[Client] LAN Remote Desktop Client sudah aktif di latar belakang.")
+            print(f"[Client] Konfigurasi server diperbarui ke config.json (IP: {args.ip}).")
+            print(f"[Client] Client background akan otomatis tersambung ke IP baru dalam beberapa detik.")
+        else:
+            print("[Client] LAN Remote Desktop Client sudah aktif di latar belakang (Single Instance).")
+            print("[Client] Membuka jendela Pengaturan Server...")
+
+        sys.exit(0)
+
 def main():
     parser = argparse.ArgumentParser(description="LAN Remote Desktop Client Agent")
     parser.add_argument("--server", type=str, help="Server WebSocket URL (e.g. ws://192.168.8.167:8001/ws/client/xyz)")
@@ -593,6 +687,9 @@ def main():
             auto_ensure_autostart()
         except Exception as e:
             print(f"[Autostart Info] {e}")
+
+    # Pastikan hanya 1 instance client agent yang berjalan (mencegah duplikasi tray icon / proses ganda)
+    ensure_single_instance(args)
 
     client = RemoteClient(
         server_url=server_url,

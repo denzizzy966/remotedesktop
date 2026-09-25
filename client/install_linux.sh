@@ -194,6 +194,8 @@ INSTALL_SERVICE_CHOICE=${INSTALL_SERVICE_CHOICE:-Y}
 if [[ "$INSTALL_SERVICE_CHOICE" =~ ^[Yy]$ ]]; then
     echo "Menyiapkan systemd service..."
     bash "$SCRIPT_DIR/install_client_service.sh"
+    # Hapus desktop autostart agar tidak berjalan ganda saat user login ke desktop
+    rm -f "$AUTOSTART_DIR/lan-remotedesktop-client.desktop" 2>/dev/null || true
 else
     echo "Memulai client di latar belakang..."
     bash "$SCRIPT_DIR/start_client.sh"

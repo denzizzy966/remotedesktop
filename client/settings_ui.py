@@ -73,14 +73,18 @@ def open_settings_window(client=None, on_saved_callback=None):
 
     cfg = load_config()
 
-    try:
-        root = tk.Tk()
-    except Exception:
+    # Clean up any residual Tkinter root to ensure exactly ONE clean window appears
+    if getattr(tk, "_default_root", None) is not None:
         try:
-            root = tk.Toplevel()
+            tk._default_root.destroy()
         except Exception:
-            root = tk.Tk()
+            try:
+                tk._default_root.withdraw()
+            except Exception:
+                pass
+        tk._default_root = None
 
+    root = tk.Tk()
     _active_settings_window = root
     root.title("Pengaturan Koneksi - LAN Remote Client")
     root.geometry("460x520")
@@ -106,9 +110,18 @@ def open_settings_window(client=None, on_saved_callback=None):
         global _active_settings_window
         _active_settings_window = None
         try:
+            root.quit()
+        except Exception:
+            pass
+        try:
             root.destroy()
         except Exception:
             pass
+        if __name__ == "__main__" or any(arg in sys.argv for arg in ["--settings", "--config-gui"]):
+            try:
+                sys.exit(0)
+            except SystemExit:
+                pass
 
     root.protocol("WM_DELETE_WINDOW", on_window_close)
 
@@ -302,6 +315,11 @@ def open_settings_window(client=None, on_saved_callback=None):
         pass
     finally:
         _active_settings_window = None
+        if any(arg in sys.argv for arg in ["--settings", "--config-gui"]) or __name__ == "__main__":
+            try:
+                sys.exit(0)
+            except SystemExit:
+                pass
 
 if __name__ == "__main__":
     open_settings_window()

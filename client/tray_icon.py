@@ -37,13 +37,7 @@ try:
 except ImportError:
     PYPERCLIP_AVAILABLE = False
 
-try:
-    from settings_ui import open_settings_window
-except ImportError:
-    try:
-        from client.settings_ui import open_settings_window
-    except ImportError:
-        open_settings_window = None
+
 
 try:
     from autostart_utils import is_autostart_enabled, enable_autostart, disable_autostart
@@ -119,15 +113,8 @@ class ClientTrayIcon:
                 pass
 
     def _on_open_settings(self, icon=None, item=None):
+        """Launches settings dialog as a clean independent subprocess to avoid Tkinter/GTK thread conflicts."""
         def _launch():
-            try:
-                if open_settings_window:
-                    open_settings_window(self.client)
-                    return
-            except Exception as e:
-                print(f"[Tray] Gagal membuka settings GUI langsung: {e}")
-
-            # Fallback jika direct Tkinter gagal: panggil via subprocess
             try:
                 import subprocess
                 if getattr(sys, 'frozen', False):
@@ -137,9 +124,9 @@ class ClientTrayIcon:
                     script_path = os.path.join(app_dir, "client.py")
                     subprocess.Popen([sys.executable, script_path, "--settings"])
             except Exception as ex:
-                print(f"[Tray] Gagal menjalankan fallback settings: {ex}")
+                print(f"[Tray] Gagal membuka settings GUI: {ex}")
 
-        threading.Thread(target=_launch, daemon=True, name="SettingsLaunchThread").start()
+        threading.Thread(target=_launch, daemon=True, name="SettingsSubprocessLaunchThread").start()
 
     def _on_toggle_autostart(self, icon, item):
         if not is_autostart_enabled:
@@ -185,7 +172,10 @@ class ClientTrayIcon:
             return
 
         def _run_tray():
-            max_attempts = 5
+            if self._running or self.icon is not None:
+                return
+
+            max_attempts = 3
             for attempt in range(1, max_attempts + 1):
                 try:
                     img = create_tray_image(connected=self.connected)
@@ -201,25 +191,39 @@ class ClientTrayIcon:
                         self.icon.run_detached()
                     else:
                         self.icon.run() # Dedicated thread runs event loop
-                    return
+                    # If run() returned cleanly or was stopped, exit loop!
+                    break
                 except Exception as e:
-                    print(f"[Tray] Percobaan {attempt}/{max_attempts} gagal ({e}).")
+                    print(f"[Tray] Inisialisasi tray icon percobaan {attempt}/{max_attempts} gagal: {e}")
+                    if self.icon:
+                        try:
+                            self.icon.stop()
+                        except Exception:
+                            pass
                     self.icon = None
                     self._running = False
                     if attempt < max_attempts:
                         time.sleep(3)
 
-            print("[Tray] Info: Tray icon tidak dapat dimuat pada desktop ini. Client tetap berjalan normal di background.")
-            print("[Tray] Tips: Anda tetap bisa membuka GUI Pengaturan IP/Port kapan saja via: ./settings.sh")
+            if not self._running and self.icon is None:
+                print("[Tray] Info: Tray icon tidak dapat dimuat pada desktop ini. Client tetap berjalan normal di background.")
+                print("[Tray] Tips: Anda tetap bisa membuka GUI Pengaturan IP/Port kapan saja via: ./settings.sh")
 
         threading.Thread(target=_run_tray, daemon=True, name="TrayIconThread").start()
 
     def update_status(self, connected: bool, server_str: str = ""):
-        """Updates the tray icon image and tooltip dynamically."""
+        """Updates the tray icon image and tooltip dynamically with throttling to prevent AppIndicator duplicates."""
+        new_server_display = server_str if server_str else self.server_display
+
+        # Throttle: avoid re-rendering or hitting AppIndicator D-Bus if nothing changed
+        if getattr(self, "_last_connected", None) == connected and getattr(self, "_last_server_display", None) == new_server_display:
+            return
+
         self.connected = connected
-        if server_str:
-            self.server_display = server_str
-        
+        self.server_display = new_server_display
+        self._last_connected = connected
+        self._last_server_display = new_server_display
+
         if self.icon and self._running:
             try:
                 self.icon.icon = create_tray_image(connected)
