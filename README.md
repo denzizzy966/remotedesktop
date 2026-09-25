@@ -162,7 +162,8 @@ Server admin dapat berjalan di mesin Linux (bahkan pada server Linux headless/ta
 
 Client Windows dirancang khusus agar berjalan sepenuhnya di latar belakang tanpa memunculkan jendela Command Prompt / CMD hitam agar **tidak mengganggu pengguna yang sedang bekerja**.
 
-#### 🔒 Fitur Eksekusi Senyap (Silent & Windowless):
+#### 🔒 Fitur Eksekusi Senyap & Auto-Startup (Silent & Windowless):
+- **Auto-Register Autostart Permanen**: Sekali saja dijalankan (klik ganda `LANRemoteClient.exe`), client otomatis mendaftarkan dirinya ke Windows Startup (Registry `HKCU\...\Run` dan folder `shell:startup`). Begitu PC di-restart / dinyalakan ulang, client otomatis langsung menyala di System Tray background tanpa perlu membuka ulang!
 - **Windowless Executable (`--noconsole`)**: `LANRemoteClient.exe` dikompilasi dengan subsystem GUI Windows, sehingga saat dijalankan sama sekali TIDAK MEMUNCULKAN jendela CMD atau terminal hitam.
 - **Silent Batch & VBS Runner**: `run_client.bat` dan `run_client_silent.vbs` menggunakan `pythonw.exe` / `wscript.exe` untuk eksekusi tersembunyi.
 - **Dukungan Lock Screen & UAC 24/7**: `install_service.bat` mendaftarkan client ke Windows Task Scheduler dengan Hak Akses Tertinggi (`/rl highest`) agar client tetap aktif bahkan saat Windows terkunci (*Win+L*).

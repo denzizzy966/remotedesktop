@@ -40,6 +40,9 @@ def build_client():
         "--hidden-import", "tkinter.ttk",
         "--hidden-import", "tkinter.messagebox",
         "--hidden-import", "settings_ui",
+        "--hidden-import", "autostart_utils",
+        "--hidden-import", "win32com",
+        "--hidden-import", "win32com.client",
         client_entry
     ]
 

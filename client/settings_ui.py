@@ -11,6 +11,14 @@ if getattr(sys, 'frozen', False):
 else:
     APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
+try:
+    from autostart_utils import is_autostart_enabled, enable_autostart, disable_autostart
+except ImportError:
+    try:
+        from client.autostart_utils import is_autostart_enabled, enable_autostart, disable_autostart
+    except ImportError:
+        is_autostart_enabled, enable_autostart, disable_autostart = None, None, None
+
 def get_config_path():
     candidates = [
         os.path.join(APP_DIR, "config.json"),
@@ -161,7 +169,23 @@ def open_settings_window(client=None, on_saved_callback=None):
         activebackground="#0f172a",
         activeforeground="#ffffff"
     )
-    chk_auto.pack(anchor="w", pady=(0, 12))
+    chk_auto.pack(anchor="w", pady=(0, 6))
+
+    # Autostart Checkbox
+    init_autostart = is_autostart_enabled() if is_autostart_enabled else True
+    var_autostart = tk.BooleanVar(value=init_autostart)
+    chk_autostart = tk.Checkbutton(
+        body,
+        text="Mulai otomatis saat Windows dinyalakan (Autostart Background)",
+        variable=var_autostart,
+        font=("Segoe UI", 9),
+        fg="#cbd5e1",
+        bg="#0f172a",
+        selectcolor="#020617",
+        activebackground="#0f172a",
+        activeforeground="#ffffff"
+    )
+    chk_autostart.pack(anchor="w", pady=(0, 12))
 
     # Device ID Display
     dev_id = (client.device_id if client else cfg.get("device_id")) or "Unknown"
@@ -210,10 +234,21 @@ def open_settings_window(client=None, on_saved_callback=None):
         cfg["server_ip"] = ip_val
         cfg["server_port"] = p_int
         cfg["auto_discover"] = auto_val
+        cfg["autostart"] = var_autostart.get()
         if ip_val:
             cfg["server_url"] = f"ws://{ip_val}:{p_int}/ws/client/{dev_id}"
         else:
             cfg["server_url"] = ""
+
+        # Apply autostart preference in system
+        if is_autostart_enabled and enable_autostart and disable_autostart:
+            try:
+                if var_autostart.get():
+                    enable_autostart()
+                else:
+                    disable_autostart()
+            except Exception as e:
+                print(f"[Settings] Error updating autostart: {e}")
 
         ok, msg = save_config(cfg)
         if not ok:

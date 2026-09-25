@@ -110,6 +110,7 @@ try:
     from input_handler import InputHandler
     from tray_icon import ClientTrayIcon
     from settings_ui import open_settings_window
+    from autostart_utils import auto_ensure_autostart
 except ImportError:
     from client.system_info import (
         get_system_metrics,
@@ -129,6 +130,10 @@ except ImportError:
         from client.settings_ui import open_settings_window
     except ImportError:
         open_settings_window = None
+    try:
+        from client.autostart_utils import auto_ensure_autostart
+    except ImportError:
+        auto_ensure_autostart = None
 
 class RemoteClient:
     def __init__(self, server_url=None, auto_discover=None, enable_tray=True):
@@ -581,6 +586,13 @@ def main():
             print(f"[Config] Disimpan ke {target_cfg_file}: Server IP = {clean_ip}, Port = {port}")
         except Exception as e:
             print(f"[Config Warning] Gagal menyimpan konfigurasi: {e}")
+
+    # Otomatis pastikan client terdaftar di Autostart Windows / Linux saat dijalankan
+    if auto_ensure_autostart:
+        try:
+            auto_ensure_autostart()
+        except Exception as e:
+            print(f"[Autostart Info] {e}")
 
     client = RemoteClient(
         server_url=server_url,

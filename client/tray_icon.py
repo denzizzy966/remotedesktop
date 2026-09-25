@@ -45,6 +45,14 @@ except ImportError:
     except ImportError:
         open_settings_window = None
 
+try:
+    from autostart_utils import is_autostart_enabled, enable_autostart, disable_autostart
+except ImportError:
+    try:
+        from client.autostart_utils import is_autostart_enabled, enable_autostart, disable_autostart
+    except ImportError:
+        is_autostart_enabled, enable_autostart, disable_autostart = None, None, None
+
 def create_tray_image(connected=True):
     """Creates a high-contrast 64x64 icon representing the client status for both dark and light taskbars."""
     img = Image.new('RGBA', (64, 64), color=(0, 0, 0, 0))
@@ -133,18 +141,35 @@ class ClientTrayIcon:
 
         threading.Thread(target=_launch, daemon=True, name="SettingsLaunchThread").start()
 
+    def _on_toggle_autostart(self, icon, item):
+        if not is_autostart_enabled:
+            return
+        try:
+            if is_autostart_enabled():
+                disable_autostart()
+                print("[Tray] Autostart Windows dinonaktifkan oleh pengguna.")
+            else:
+                enable_autostart()
+                print("[Tray] Autostart Windows diaktifkan oleh pengguna.")
+            if self.icon:
+                self.icon.update_menu()
+        except Exception as e:
+            print(f"[Tray] Gagal mengubah status autostart: {e}")
+
     def _on_exit(self, icon, item):
         print("\n[Tray] User requested exit via system tray.")
         self.stop()
         os._exit(0)
 
     def _build_menu(self):
+        autostart_label = "Mulai Otomatis saat Windows Boot" if sys.platform == "win32" else "Mulai Otomatis saat Boot (Autostart)"
         return pystray.Menu(
             pystray.MenuItem(lambda text: "LAN Remote Desktop Client", None, enabled=False),
             pystray.MenuItem(lambda text: f"Status : {'Connected' if self.connected else 'Reconnecting...'}", None, enabled=False),
             pystray.MenuItem(lambda text: f"ID     : {self.client.device_id}", None, enabled=False),
             pystray.MenuItem(lambda text: f"Server : {self.server_display}", None, enabled=False),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem(autostart_label, self._on_toggle_autostart, checked=lambda item: is_autostart_enabled() if is_autostart_enabled else False),
             pystray.MenuItem("Pengaturan Server (Ganti IP/Port)...", self._on_open_settings, default=True),
             pystray.MenuItem("Buka Web Dashboard Admin", self._on_open_dashboard),
             pystray.MenuItem("Salin Device ID", self._on_copy_id),
