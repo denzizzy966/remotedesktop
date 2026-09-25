@@ -24,14 +24,19 @@ if %errorlevel% neq 0 (
 python -c "import sys; print('Python terdeteksi:', sys.version.split()[0])"
 echo.
 
-:: 2. Install pip dependencies
-echo [2/4] Memasang dan memperbarui pustaka server (FastAPI, WebSockets, dll)...
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+:: 2. Install pip dependencies (Online or Offline)
+echo [2/4] Memasang dependensi server (FastAPI, WebSockets, psutil)...
+if exist "%~dp0server\offline_packages" (
+    echo [OFFLINE MODE] Folder 'server\offline_packages' terdeteksi!
+    echo Memasang pustaka server dari paket offline lokal (tanpa perlu koneksi internet)...
+    python -m pip install --no-index --find-links="%~dp0server\offline_packages" fastapi uvicorn websockets psutil
+) else (
+    python -m pip install --upgrade pip
+    python -m pip install -r requirements.txt
+)
 if %errorlevel% neq 0 (
     echo.
-    echo [ERROR] Gagal memasang dependensi dari requirements.txt.
-    echo Pastikan komputer terhubung ke internet saat proses instalasi.
+    echo [ERROR] Gagal memasang dependensi server.
     pause
     exit /b 1
 )

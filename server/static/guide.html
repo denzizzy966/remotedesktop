@@ -498,13 +498,21 @@ pip3 install pystray --break-system-packages</code></pre>
                     <div class="w-9 h-9 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
                         <i class="fa-solid fa-server"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">6. Panduan Instalasi Server Admin (Windows 10 / 11)</h2>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">6. Panduan Instalasi Server Admin (Windows 10 / 11)</h2>
+                        <span class="text-xs text-indigo-400 font-medium">Mendukung Instalasi 100% Offline via Paket Lokal</span>
+                    </div>
                 </div>
                 <div class="space-y-3 text-xs text-slate-300">
                     <p>Jika PC Administrator utama menggunakan Windows:</p>
                     <ol class="list-decimal list-inside space-y-2 text-slate-300 pl-1">
                         <li>Pastikan Python 3.9+ sudah terpasang.</li>
-                        <li>Klik ganda file <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">install_admin_server.bat</code> untuk memasang kebutuhan server (FastAPI, Uvicorn, websockets, dll).</li>
+                        <li>Klik ganda file <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">install_admin_server.bat</code>.
+                            <div class="p-3 my-2 rounded-lg bg-indigo-950/30 border border-indigo-500/30 text-indigo-200">
+                                <i class="fa-solid fa-box-open mr-1"></i>
+                                <strong>Fitur Offline Cepat:</strong> Installer otomatis mendeteksi folder <code class="text-indigo-300 bg-slate-900 px-1 py-0.5 rounded">server/offline_packages</code>. Jika ada, seluruh dependensi (FastAPI, Uvicorn, websockets, psutil) diinstal instan tanpa koneksi internet!
+                            </div>
+                        </li>
                         <li>Klik ganda <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">run_server.bat</code> untuk menyalakan server.</li>
                         <li>Buka browser dan kunjungi: <a href="http://localhost:8001" target="_blank" class="text-indigo-400 underline font-mono">http://localhost:8001</a> (atau port yang tertera pada console).</li>
                         <li>Pada saat pertama kali dibuka, buat username dan password administrator baru.</li>
@@ -526,11 +534,31 @@ pip3 install pystray --break-system-packages</code></pre>
                 <p class="text-xs text-slate-300 leading-relaxed mb-4">
                     Server remote desktop ini sepenuhnya "Headless" (tidak memerlukan monitor/desktop GUI) dan dapat berjalan 24 jam non-stop sebagai Systemd Service di Linux:
                 </p>
+
+                <!-- Offline packages callout -->
+                <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700 mb-4 text-xs space-y-2">
+                    <div class="flex items-center gap-2 text-cyan-300 font-semibold">
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <span>Paket Offline Server Linux & Anti-Apt-Lock</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        Folder <code class="text-indigo-300 bg-slate-900 px-1 py-0.5 rounded">server/offline_packages</code> sudah menyertakan binary wheel Linux x86_64 (<code class="text-indigo-300">manylinux2014_x86_64</code> Python 3.10).
+                    </p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-300 pl-1">
+                        <li><strong>Bypass Apt Update:</strong> Installer <code class="text-indigo-300">install_admin_server.sh</code> memeriksa apakah <code class="text-slate-200">python3</code> dan <code class="text-slate-200">pip3</code> sudah ada. Jika ada, installer melewati <code class="text-slate-200">apt-get update</code> sehingga kebal terhadap lock error background <code class="text-amber-300">unattended-upgrades</code>.</li>
+                        <li><strong>100% Offline:</strong> Dependensi dipasang langsung dari folder lokal tanpa membebani kuota internet server.</li>
+                    </ul>
+                </div>
+
                 <div class="code-block text-xs mb-4">
                     <button class="copy-btn" onclick="copyCode(this)">Salin</button>
                     <pre class="text-indigo-300"><code># OPSI 1: Pasang Systemd Service Langsung (1-Klik):
 chmod +x install_server_service.sh uninstall_server_service.sh
 sudo ./install_server_service.sh
+
+# OPSI 2: Wizard Interaktif:
+chmod +x install_admin_server.sh
+sudo ./install_admin_server.sh
 
 # Cek Status Service & Real-time Logs:
 sudo systemctl status lan-remote-server

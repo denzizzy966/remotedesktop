@@ -293,7 +293,10 @@ F. RINGKASAN FILE KOMPONEN CLIENT:
 Jika PC Administrator menggunakan Windows:
  1. Pastikan Python 3.9+ sudah terpasang.
  2. Klik ganda `install_admin_server.bat` di root project.
-    Script ini akan memasang pustaka server (FastAPI, Uvicorn, websockets, dll).
+    - FITUR OFFLINE: Installer secara otomatis mendeteksi folder `server/offline_packages`.
+      Jika folder ini ada, seluruh dependensi (FastAPI, Uvicorn, websockets, psutil)
+      dipasang 100% OFFLINE tanpa perlu koneksi internet dalam hitungan detik!
+    - Jika folder offline tidak ada, installer akan mengunduh dari internet secara normal.
  3. Klik ganda `run_server.bat` untuk menyalakan server.
  4. Buka browser di PC Admin dan akses:
       http://localhost:8001  (atau port yang ditampilkan di layar console)
@@ -308,6 +311,19 @@ Jawaban: SANGAT BISA DAN SANGAT DIREKOMENDASIKAN!
 
 Server dirancang sepenuhnya "Headless" (tidak butuh GUI desktop pada mesin server),
 karena server hanya bertindak sebagai backend API, WebSocket hub, dan Web Server.
+
+Fitur Dukungan Instalasi Offline Server Linux:
+ - Telah disertakan bundel paket wheel binary Linux x86_64 (`manylinux2014_x86_64`
+   untuk Python 3.10) di folder `server/offline_packages/`.
+ - Installer `install_admin_server.sh` secara cerdas:
+   1. Memeriksa apakah `python3` dan `pip3` sudah ada di sistem. Jika sudah ada,
+      installer TIDAK AKAN menjalankan `apt-get update`, sehingga kebal terhadap
+      benturan apt-lock / unattended-upgrades Ubuntu!
+   2. Otomatis menggunakan parameter `--no-index --find-links` ke `server/offline_packages`
+      sehingga proses instalasi pustaka selesai dalam 2 detik tanpa internet.
+ - Jika ingin memperbarui/mengunduh ulang paket server di kemudian hari:
+   Jalankan `./server/download_offline_packages.sh` (Linux) atau
+   `server\download_offline_packages.bat` (Windows).
 
 Langkah Instalasi di Ubuntu / Linux Server (via SSH / Console):
  1. OPSI 1: PEMASANGAN SYSTEMD SERVICE OTOMATIS (1 PERINTAH - PALING DIREKOMENDASIKAN)

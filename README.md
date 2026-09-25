@@ -67,7 +67,8 @@ Support Platform:
 
 ```
 remotedesktop/
-├── install_admin_server.bat # Installer 1-klik untuk Admin Server (Windows)
+├── install_admin_server.bat # Installer 1-klik untuk Admin Server (Windows, Offline/Online)
+├── install_admin_server.sh  # Installer untuk Admin Server (Linux/Ubuntu, Offline/Online)
 ├── run_server.bat           # Launcher server 1-klik untuk Windows
 ├── run_server.py            # Entry point server (dengan auto-check port)
 ├── reset_password.bat       # Script console untuk reset password admin
@@ -78,8 +79,11 @@ remotedesktop/
 │   ├── auth.py              # Autentikasi, hashing PBKDF2, token session
 │   ├── client_manager.py    # Manajemen status client & multiplexing viewer
 │   ├── port_utils.py        # Detektor ketersediaan port bebas & proses
+│   ├── offline_packages/    # Bundel wheel (.whl) server offline (Win & Linux cp310)
+│   ├── download_offline_packages.bat # Skrip download/update wheel server Windows
+│   ├── download_offline_packages.sh  # Skrip download/update wheel server Linux
 │   └── static/
-│       ├── index.html       # Dashboard UI modern dengan modal Settings
+│       ├── index.html       # Dashboard UI modern dengan modal Settings & Multi-View
 │       ├── login.html       # Halaman Login modern (Show Pass, Remember, Setup)
 │       ├── css/style.css    # Styling canvas remote & dashboard
 │       └── js/
@@ -110,7 +114,7 @@ remotedesktop/
    ```
    *Installer ini akan:*
    - Memeriksa instalasi Python di sistem Anda.
-   - Memasang seluruh pustaka yang diperlukan (`fastapi`, `uvicorn`, `websockets`, dll).
+   - **Mode Offline Otomatis**: Mendeteksi folder `server/offline_packages` dan memasang seluruh dependensi (`fastapi`, `uvicorn`, `websockets`, `psutil`) secara offline tanpa perlu koneksi internet!
    - Menanyakan apakah ingin mengatur password admin awal sekarang (atau via web nanti).
    - Menawarkan opsi membuat shortcut di Desktop (*"LAN Remote Desktop Server"*).
 
@@ -134,11 +138,11 @@ Server admin dapat berjalan di mesin Linux (bahkan pada server Linux headless/ta
    Buka terminal di folder proyek:
    ```bash
    chmod +x install_admin_server.sh run_server.sh reset_password.sh
-   ./install_admin_server.sh
+   sudo ./install_admin_server.sh
    ```
    *Installer ini akan:*
-   - Menginstal Python3 & paket sistem yang dibutuhkan via `apt`.
-   - Menginstal dependensi server (`fastapi`, `uvicorn`, `websockets`, dll).
+   - **Bypass Apt Update Cerdas**: Memeriksa apakah `python3` dan `pip3` sudah ada di sistem. Jika sudah terpasang, installer melewati `apt-get update` sehingga aman dari benturan lock `unattended-upgrades`.
+   - **Mode Offline Otomatis**: Memasang pustaka server (`fastapi`, `uvicorn`, `websockets`, `psutil`) langsung dari bundel lokal `server/offline_packages` (`manylinux2014_x86_64` Python 3.10) tanpa perlu download.
    - Menjalankan wizard setup password admin awal.
    - Menawarkan opsi memasang server sebagai **Systemd Service** (`lan-remote-server.service`), sehingga server otomatis berjalan 24/7 di latar belakang saat Linux dinyalakan/booting!
    - Otomatis membuka port firewall `ufw` jika aktif.

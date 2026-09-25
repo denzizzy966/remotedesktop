@@ -34,25 +34,38 @@ wait_for_apt_lock() {
     done
 }
 
-# 1. Update apt & install Python
-echo "[1/4] Memasang Python & paket sistem..."
-wait_for_apt_lock
-sudo apt-get update
-wait_for_apt_lock
-sudo apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-dev \
-    libffi-dev
+# 1. Update apt & install Python (Hanya jika belum terpasang)
+if command -v python3 >/dev/null 2>&1 && command -v pip3 >/dev/null 2>&1; then
+    echo "[1/4] Python 3 dan pip3 sudah terpasang di sistem ($(python3 --version))."
+else
+    echo "[1/4] Memasang Python & paket sistem..."
+    wait_for_apt_lock
+    sudo apt-get update -o Acquire::ForceIPv4=true || true
+    wait_for_apt_lock
+    sudo apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-dev \
+        libffi-dev || true
+fi
 
 echo ""
 python3 -c "import sys; print('Python terdeteksi:', sys.version.split()[0])"
 echo ""
 
-# 2. Install pip requirements
+# 2. Install pip requirements (Online or 100% Offline)
 echo "[2/4] Memasang dependensi server (FastAPI, Uvicorn, WebSockets, psutil)..."
 cd "$SCRIPT_DIR"
-pip3 install -r requirements.txt || pip3 install --break-system-packages -r requirements.txt
+
+if [ -d "$SCRIPT_DIR/server/offline_packages" ]; then
+    echo "[OFFLINE MODE] Folder 'server/offline_packages' terdeteksi!"
+    echo "Memasang dependensi server langsung dari cache lokal (tanpa perlu download/internet)..."
+    pip3 install --no-index --find-links="$SCRIPT_DIR/server/offline_packages" fastapi uvicorn websockets psutil || \
+    pip3 install --no-index --find-links="$SCRIPT_DIR/server/offline_packages" --break-system-packages fastapi uvicorn websockets psutil || \
+    pip3 install -r requirements.txt || pip3 install --break-system-packages -r requirements.txt
+else
+    pip3 install -r requirements.txt || pip3 install --break-system-packages -r requirements.txt
+fi
 echo "Dependensi server berhasil dipasang!"
 echo ""
 
