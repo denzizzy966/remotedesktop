@@ -111,13 +111,24 @@ CARA D: Antarmuka Grafis (UI Settings) - Paling Mudah & Praktis
 
 A. PILIHAN METODE INSTALASI CLIENT WINDOWS:
 
+MODE BACKGROUND 100% SILENT (TANPA JENDELA CMD / TERMINAL):
+Client Windows dirancang khusus agar berjalan sepenuhnya di latar belakang tanpa
+mengganggu user:
+- `LANRemoteClient.exe` dikompilasi dengan subsystem GUI (`--noconsole`) sehingga
+  TIDAK AKAN PERNAH memunculkan jendela Command Prompt / CMD hitam.
+- `run_client.bat` dan `run_client_silent.vbs` menggunakan runner tanpa konsol
+  (`pythonw.exe` / `wscript.exe`) yang langsung menutup prompt dalam sekejap.
+- Ikon status monitor tetap muncul di System Tray (dekat jam taskbar) tanpa mengganggu.
+- Shortcut Desktop "Pengaturan Server LAN Remote" dibuat otomatis untuk memudahkan
+  mengganti IP server kapan saja lewat antarmuka grafis.
+
 OPSI 1: EXECUTABLE MANDIRI (LANRemoteClient.exe) - TERMUDAH & 100% OFFLINE
  Cocok untuk: PC Client yang tidak ada internet dan tidak ada Python.
  Langkah-langkah:
   1. Salin file `client/LANRemoteClient.exe` dan `client/config.json` ke PC target
      (bisa diletakkan di folder mana saja, misal `C:\Program Files\LANClient\`).
   2. Klik ganda `LANRemoteClient.exe`.
-  3. Client langsung aktif di latar belakang dan terhubung ke Server Admin!
+  3. Client langsung aktif di latar belakang (tanpa jendela CMD) dan terhubung ke Server Admin!
 
 OPSI 2: MENGGUNAKAN INSTALLER BATCH (install_windows.bat)
  Cocok untuk: Instalasi terpadu dengan opsi setup shortcut & autostart otomatis.
@@ -128,8 +139,8 @@ OPSI 2: MENGGUNAKAN INSTALLER BATCH (install_windows.bat)
      - Jika ada file .exe: Langsung melompat ke konfigurasi IP/Port.
      - Jika belum ada .exe: Memasang dependensi python dari folder offline.
   4. Masukkan IP Server Admin & Port (atau tekan Enter untuk Auto-Discovery).
-  5. Pilih 'Y' untuk mengaktifkan Autostart saat Windows Startup.
-  6. Pilih 'Y' untuk membuat shortcut di Desktop. Selesai!
+  5. Pilih 'Y' untuk mengaktifkan Autostart saat Windows Startup (Background/Windowless).
+  6. Pilih 'Y' untuk membuat shortcut di Desktop (Client & Pengaturan Server). Selesai!
 
 OPSI 3: PEMASANGAN OFFLINE MENGGUNAKAN WHEELS (offline_packages)
  Cocok untuk: PC yang punya Python tetapi terisolasi tanpa akses internet.
@@ -138,22 +149,29 @@ OPSI 3: PEMASANGAN OFFLINE MENGGUNAKAN WHEELS (offline_packages)
      lengkap (websockets, psutil, mss, Pillow, pynput, pyautogui, pystray, dll).
   2. Buka Command Prompt / PowerShell di folder client:
      pip install --no-index --find-links=offline_packages -r requirements.txt
-  3. Jalankan client dengan: `run_client.bat`
+  3. Jalankan client di background dengan: `run_client.bat`
 
-OPSI 4: INSTALL SEBAGAI SERVICE / TUGAS SISTEM (install_service.bat) - DUKUNGAN LOCK SCREEN & UAC
- Cocok untuk: PC yang sering di-lock (Win+L) dan ingin bisa diakses 100% seperti AnyDesk/RustDesk.
+OPSI 4: INSTALL SEBAGAI SERVICE / TUGAS SISTEM (install_service.bat) - REKOMENDASI TERBAIK
+ Cocok untuk: PC yang ingin berjalan 24/7 di background, menembus Lock Screen & UAC.
  Langkah-langkah:
   1. Klik kanan `install_service.bat` -> pilih "Run as administrator".
   2. Script akan otomatis:
      - Mengaktifkan izin Software SAS (Ctrl+Alt+Del) di Registry Windows.
      - Menghubungkan client ke Server Admin (via IP/Port atau Auto-Discovery).
-     - Mendaftarkan client ke Windows Task Scheduler dengan Hak Akses Tertinggi (`/rl highest`).
+     - Mendaftarkan client ke Windows Task Scheduler dengan Hak Akses Tertinggi (`/rl highest`)
+       dan target windowless (0 jendela CMD).
      - Menyalakan client di latar belakang saat itu juga.
-  3. Sekarang komputer dapat diakses dan dikontrol meskipun dalam kondisi Lock Screen!
+     - Membuat shortcut "Pengaturan Server LAN Remote" di Desktop.
+  3. Komputer dapat diakses dan dikontrol meskipun dalam kondisi Lock Screen (Win+L)!
+
+MANAJEMEN CLIENT WINDOWS:
+ - Cek Status Client : Klik ganda `status_client.bat` (melihat PID & status Task Scheduler)
+ - Hentikan Client   : Klik ganda `stop_client.bat`
+ - Ganti IP Server   : Klik ganda `settings.bat` atau shortcut Desktop "Pengaturan Server LAN Remote"
 
 B. FITUR SYSTEM TRAY & AUTOSTART PADA WINDOWS:
  1. Tampilan System Tray Windows:
-    - `LANRemoteClient.exe` otomatis memunculkan icon monitor dengan indikator status
+    - Client otomatis memunculkan icon monitor dengan indikator status
       di System Tray (area notifikasi dekat jam di pojok kanan bawah):
       * 🟢 Titik Hijau: Terhubung aktif ke Server Remote Desktop.
       * 🔴 Titik Merah: Disconnected / Reconnecting (mencari server).
@@ -161,18 +179,18 @@ B. FITUR SYSTEM TRAY & AUTOSTART PADA WINDOWS:
       * Status koneksi (Connected / Reconnecting)
       * Device ID PC ini
       * Server IP & Port yang sedang terhubung
+      * "Pengaturan Server (Ganti IP/Port)..."
       * "Salin Device ID" ke clipboard
       * "Buka Web Dashboard Admin" langsung di browser
       * "Keluar (Exit Client)"
  2. Panduan Autostart saat Windows Boot / Login:
-    - Cara A (Rekomendasi - Menembus Lock Screen & Hak Admin):
+    - Cara A (Rekomendasi - Menembus Lock Screen & Hak Admin, 100% Windowless):
       Klik kanan `install_service.bat` -> pilih "Run as administrator".
       Task Scheduler akan menyalakan client secara otomatis dengan `/rl highest`
-      setiap kali komputer booting / user login.
+      di background setiap kali komputer booting / user login tanpa memunculkan CMD.
     - Cara B (Standar Folder Startup Windows):
-      1. Tekan tombol `Win + R` di keyboard, ketik: `shell:startup` lalu tekan Enter.
-      2. Buat shortcut dari `LANRemoteClient.exe` (atau `run_client.bat`), lalu
-         paste shortcut tersebut ke dalam folder Startup yang terbuka.
+      Installer `install_windows.bat` otomatis memasukkan shortcut windowless
+      ke folder Startup Windows (`shell:startup`).
 
 ================================================================================
 5. PANDUAN INSTALASI CLIENT (LINUX MINT 22 / UBUNTU 22.04 LTS)

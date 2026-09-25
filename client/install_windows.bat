@@ -15,6 +15,7 @@ if exist "%~dp0LANRemoteClient.exe" (
     echo Anda dapat langsung menjalankan client tanpa instalasi apapun!
     echo.
     set RUN_TARGET=%~dp0LANRemoteClient.exe
+    set TASK_CMD=\"%~dp0LANRemoteClient.exe\"
     goto config_server
 )
 
@@ -58,7 +59,13 @@ if %errorlevel% neq 0 (
 )
 echo Pustaka client berhasil dipasang!
 echo.
-set RUN_TARGET=%~dp0run_client.bat
+if exist "%~dp0LANRemoteClient.exe" (
+    set RUN_TARGET=%~dp0LANRemoteClient.exe
+    set TASK_CMD=\"%~dp0LANRemoteClient.exe\"
+) else (
+    set RUN_TARGET=%~dp0run_client_silent.vbs
+    set TASK_CMD=wscript.exe \"%~dp0run_client_silent.vbs\"
+)
 
 :config_server
 :: 4. Server IP and Port Configuration
@@ -88,16 +95,20 @@ echo ================================================================
 echo [4/5] Konfigurasi Autostart saat Windows menyala...
 echo ================================================================
 echo Apakah Anda ingin client ini otomatis berjalan di latar belakang
-echo setiap kali komputer dihidupkan / restart?
+echo (tanpa jendela CMD) setiap kali komputer dihidupkan / restart?
 set /p AUTOSTART="Jalankan otomatis saat Windows startup? (Y/N, default Y): "
 if /i "%AUTOSTART%"=="" set AUTOSTART=Y
 if /i "%AUTOSTART%"=="Y" (
-    :: Try registering high-privilege Task Scheduler task (enables lock screen access)
-    schtasks /create /tn "LANRemoteDesktopClient" /tr """%RUN_TARGET%""" /sc onlogon /rl highest /f >nul 2>&1
+    :: Try registering high-privilege Task Scheduler task (enables lock screen access & windowless)
+    schtasks /create /tn "LANRemoteDesktopClient" /tr "%TASK_CMD%" /sc onlogon /rl highest /f >nul 2>&1
     if %errorlevel% == 0 (
-        echo [OK] Berhasil didaftarkan sebagai Tugas Prioritas Tinggi (Bypass UAC & Akses Lock Screen)!
+        echo [OK] Berhasil didaftarkan ke Task Scheduler (Bypass UAC & Akses Lock Screen)!
     )
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $StartupPath = [System.IO.Path]::Combine([Environment]::GetFolderPath('Startup'), 'LAN Remote Desktop Client.lnk'); $Shortcut = $WshShell.CreateShortcut($StartupPath); $Shortcut.TargetPath = '%RUN_TARGET%'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.WindowStyle = 7; $Shortcut.Description = 'LAN Remote Desktop Client Agent'; $Shortcut.Save()"
+    if exist "%~dp0LANRemoteClient.exe" (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $StartupPath = [System.IO.Path]::Combine([Environment]::GetFolderPath('Startup'), 'LAN Remote Desktop Client.lnk'); $Shortcut = $WshShell.CreateShortcut($StartupPath); $Shortcut.TargetPath = '%~dp0LANRemoteClient.exe'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.WindowStyle = 7; $Shortcut.Description = 'LAN Remote Desktop Client Agent'; $Shortcut.Save()"
+    ) else (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $StartupPath = [System.IO.Path]::Combine([Environment]::GetFolderPath('Startup'), 'LAN Remote Desktop Client.lnk'); $Shortcut = $WshShell.CreateShortcut($StartupPath); $Shortcut.TargetPath = 'wscript.exe'; $Shortcut.Arguments = '\"%~dp0run_client_silent.vbs\"'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.WindowStyle = 7; $Shortcut.Description = 'LAN Remote Desktop Client Agent'; $Shortcut.Save()"
+    )
     echo Shortcut berhasil ditambahkan ke folder Windows Startup!
 )
 echo.
@@ -106,24 +117,29 @@ echo.
 echo ================================================================
 echo [5/5] Membuat Shortcut Desktop...
 echo ================================================================
-set /p CREATE_SHORTCUT="Buat shortcut di Desktop untuk menjalankan Client? (Y/N, default Y): "
+set /p CREATE_SHORTCUT="Buat shortcut di Desktop untuk Client & Pengaturan? (Y/N, default Y): "
 if /i "%CREATE_SHORTCUT%"=="" set CREATE_SHORTCUT=Y
 if /i "%CREATE_SHORTCUT%"=="Y" (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut([System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'LAN Remote Desktop Client.lnk')); $Shortcut.TargetPath = '%RUN_TARGET%'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.Description = 'LAN Remote Desktop Client Agent'; $Shortcut.Save()"
+    if exist "%~dp0LANRemoteClient.exe" (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut([System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'LAN Remote Desktop Client.lnk')); $Shortcut.TargetPath = '%~dp0LANRemoteClient.exe'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.Description = 'LAN Remote Desktop Client Agent'; $Shortcut.Save()"
+    ) else (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut([System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'LAN Remote Desktop Client.lnk')); $Shortcut.TargetPath = 'wscript.exe'; $Shortcut.Arguments = '\"%~dp0run_client_silent.vbs\"'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.Description = 'LAN Remote Desktop Client Agent'; $Shortcut.Save()"
+    )
     echo Shortcut Desktop 'LAN Remote Desktop Client' berhasil dibuat!
+    
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut([System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'Pengaturan Server LAN Remote.lnk')); $Shortcut.TargetPath = '%~dp0settings.bat'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.Description = 'Ganti IP & Port Server Admin LAN Remote Desktop'; $Shortcut.Save()"
+    echo Shortcut Desktop 'Pengaturan Server LAN Remote' berhasil dibuat!
 )
 
 echo.
 echo ================================================================
 echo  INSTALASI CLIENT AGENT SELESAI!
 echo ================================================================
-echo Untuk menjalankan client sekarang, klik ganda:
-if exist "%~dp0LANRemoteClient.exe" (
-    echo   - LANRemoteClient.exe
-) else (
-    echo   - run_client.bat
-)
-echo   - Atau shortcut di Desktop / Startup
+echo Client berjalan di latar belakang (100%% tanpa jendela CMD/terminal):
+echo   - Menjalankan client  : Klik ganda 'run_client.bat' atau shortcut Desktop
+echo   - Ganti IP Server GUI : Klik ganda shortcut 'Pengaturan Server LAN Remote'
+echo   - Cek Status Berjalan : Jalankan 'status_client.bat'
+echo   - Hentikan Client     : Jalankan 'stop_client.bat'
 echo ================================================================
 echo.
 pause

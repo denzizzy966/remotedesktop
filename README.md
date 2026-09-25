@@ -158,31 +158,36 @@ Server admin dapat berjalan di mesin Linux (bahkan pada server Linux headless/ta
 
 ---
 
-### C. Komputer Klien (Windows 10 / 11) - Mode Offline (Tanpa Internet)
+### C. Komputer Klien (Windows 10 / 11) - 100% Background / Service (Nol Jendela CMD)
 
-Untuk komputer klien yang **tidak memiliki koneksi internet**, ada 2 pilihan sangat mudah:
+Client Windows dirancang khusus agar berjalan sepenuhnya di latar belakang tanpa memunculkan jendela Command Prompt / CMD hitam agar **tidak mengganggu pengguna yang sedang bekerja**.
+
+#### 🔒 Fitur Eksekusi Senyap (Silent & Windowless):
+- **Windowless Executable (`--noconsole`)**: `LANRemoteClient.exe` dikompilasi dengan subsystem GUI Windows, sehingga saat dijalankan sama sekali TIDAK MEMUNCULKAN jendela CMD atau terminal hitam.
+- **Silent Batch & VBS Runner**: `run_client.bat` dan `run_client_silent.vbs` menggunakan `pythonw.exe` / `wscript.exe` untuk eksekusi tersembunyi.
+- **Dukungan Lock Screen & UAC 24/7**: `install_service.bat` mendaftarkan client ke Windows Task Scheduler dengan Hak Akses Tertinggi (`/rl highest`) agar client tetap aktif bahkan saat Windows terkunci (*Win+L*).
+- **System Tray & Shortcut Pengaturan**: Ikon monitor status tetap ada di System Tray dekat jam taskbar, dan shortcut *"Pengaturan Server LAN Remote"* dibuat di Desktop untuk mengganti IP/Port server sewaktu-waktu lewat antarmuka grafis.
 
 #### Pilihan 1: Menggunakan Executable Mandiri (SANGAT DIREKOMENDASIKAN 🌟)
-File `LANRemoteClient.exe` telah dibundel secara mandiri (standalone). Komputer klien **TIDAK MEMERLUKAN Python, pip, maupun internet sama sekali**!
-1. Cukup salin file:
-   ```text
-   client\LANRemoteClient.exe
-   ```
-   *(Atau salin seluruh folder `client` via Flashdisk / LAN Share).*
-2. Di komputer klien target, cukup klik ganda:
-   ```text
-   LANRemoteClient.exe
-   ```
-   *(Atau jalankan `install_windows.bat` untuk otomatis membuat shortcut Desktop dan autostart saat Windows menyala).*
+File `LANRemoteClient.exe` telah dibundel secara mandiri (standalone) dengan opsi GUI windowless. Komputer klien **TIDAK MEMERLUKAN Python, pip, maupun internet sama sekali**!
+1. Cukup salin folder `client` (atau file `LANRemoteClient.exe` dan `config.json`) via Flashdisk / LAN Share.
+2. Di komputer klien target:
+   - **Mode Service / Lock Screen 24/7**: Klik kanan `install_service.bat` -> pilih *"Run as administrator"*. Klien akan langsung aktif di latar belakang (tanpa CMD) dan autostart saat PC menyala.
+   - **Mode Standar**: Klik ganda `run_client.bat` atau `LANRemoteClient.exe`.
 3. Klien akan langsung mendeteksi Admin Server di LAN dan terhubung!
 
 #### Pilihan 2: Menggunakan Paket Offline Wheels (Jika ingin pakai Python)
 Folder `client\offline_packages` telah berisi seluruh file `.whl` dependensi yang sudah diunduh sebelumnya:
 1. Salin folder `client` ke komputer klien.
 2. Klik ganda `install_windows.bat` — skrip akan otomatis mendeteksi folder `offline_packages` dan memasang pustaka tanpa mengakses internet.
-3. Jalankan client via `run_client.bat`.
+3. Jalankan client via `run_client.bat` (otomatis memanggil `pythonw.exe` di latar belakang).
 
-> 💡 **Ingin rebuild file EXE?** Di PC Admin yang ada internet, cukup klik ganda file `build_client_exe.bat`. File `.exe` baru akan otomatis dibuat dan disalin ke folder `client\LANRemoteClient.exe`.
+#### 🛠️ Alat Kontrol & Manajemen Client Windows:
+- **Cek Status**: Klik ganda `status_client.bat` untuk melihat proses aktif, PID, dan status Task Scheduler.
+- **Hentikan Client**: Klik ganda `stop_client.bat` untuk mematikan proses client seketika.
+- **Ubah IP / Port Server**: Klik ganda shortcut *"Pengaturan Server LAN Remote"* di Desktop atau jalankan `settings.bat`.
+
+> 💡 **Ingin rebuild file EXE?** Di PC yang ada internet/PyInstaller, cukup klik ganda file `build_client_exe.bat`. File `.exe` baru akan otomatis dibuat dengan bendera `--noconsole` dan disalin ke `client\LANRemoteClient.exe`.
 
 ---
 

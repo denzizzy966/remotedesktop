@@ -3,15 +3,15 @@ title LAN Remote Client - Pengaturan Server
 cd /d "%~dp0"
 
 if exist "%~dp0LANRemoteClient.exe" (
-    "%~dp0LANRemoteClient.exe" --settings
-    goto finish
+    start "" "%~dp0LANRemoteClient.exe" --settings
+    exit /b 0
 )
 
-python client.py --settings
-if %errorlevel% neq 0 (
-    echo.
-    echo [ERROR] Gagal membuka antarmuka pengaturan.
-    pause
+where pythonw >nul 2>&1
+if %errorlevel% equ 0 (
+    start "" pythonw "%~dp0client.py" --settings
+    exit /b 0
 )
 
-:finish
+start "" python "%~dp0client.py" --settings
+exit /b 0

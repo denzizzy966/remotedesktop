@@ -20,6 +20,7 @@ def build_client():
         sys.executable, "-m", "PyInstaller",
         "--noconfirm",
         "--onefile",
+        "--noconsole",
         "--name", "LANRemoteClient",
         "--distpath", dist_dir,
         "--workpath", build_dir,

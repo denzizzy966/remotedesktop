@@ -35,7 +35,7 @@ echo.
 echo [1/4] Menghentikan proses Client Agent...
 taskkill /f /im LANRemoteClient.exe >nul 2>&1
 taskkill /f /fi "WINDOWTITLE eq *LAN Remote Desktop Client*" >nul 2>&1
-wmic process where "commandline like '%%client.py%%'" call terminate >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*client.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 echo   - Proses client agent berhasil dihentikan.
 
 echo.
@@ -47,7 +47,8 @@ echo.
 echo [3/4] Menghapus Shortcut Startup dan Desktop...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$startupLnk = [System.IO.Path]::Combine([Environment]::GetFolderPath('Startup'), 'LAN Remote Desktop Client.lnk'); if (Test-Path $startupLnk) { Remove-Item $startupLnk -Force; Write-Host '  - Shortcut Startup dihapus.' }; " ^
-    "$desktopLnk = [System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'LAN Remote Desktop Client.lnk'); if (Test-Path $desktopLnk) { Remove-Item $desktopLnk -Force; Write-Host '  - Shortcut Desktop dihapus.' }; " ^
+    "$desktopLnk = [System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'LAN Remote Desktop Client.lnk'); if (Test-Path $desktopLnk) { Remove-Item $desktopLnk -Force; Write-Host '  - Shortcut Desktop Client dihapus.' }; " ^
+    "$settingsLnk = [System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'Pengaturan Server LAN Remote.lnk'); if (Test-Path $settingsLnk) { Remove-Item $settingsLnk -Force; Write-Host '  - Shortcut Pengaturan Server dihapus.' }; " ^
     "$commonStartup = [System.IO.Path]::Combine([Environment]::GetFolderPath('CommonStartup'), 'LAN Remote Desktop Client.lnk'); if (Test-Path $commonStartup) { Remove-Item $commonStartup -Force; Write-Host '  - Shortcut Common Startup dihapus.' }"
 
 echo.

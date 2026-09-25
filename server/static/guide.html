@@ -255,7 +255,30 @@
                     </div>
                     <div>
                         <h2 class="text-xl font-bold text-white">4. Panduan Instalasi Client (Windows 10 / 11)</h2>
-                        <span class="text-xs text-slate-400">Standalone Executable, System Tray, dan Autostart</span>
+                        <span class="text-xs text-slate-400">100% Silent Background (Zero CMD), Standalone Executable, System Tray, dan Autostart</span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-blue-950/30 border border-blue-500/30 text-blue-200 text-sm mb-4 flex items-start gap-3">
+                    <i class="fa-solid fa-eye-slash text-blue-400 text-lg mt-0.5"></i>
+                    <div>
+                        <strong class="font-semibold text-blue-100">Zero CMD / Terminal Interruption (100% Background):</strong>
+                        <p class="text-xs text-blue-300/90 mt-1">Client Windows dikompilasi dengan bendera GUI (<code class="bg-slate-800 text-cyan-300 px-1 py-0.5 rounded">--noconsole</code>) dan dijalankan secara silent via Task Scheduler atau Pythonw, sehingga <strong>TIDAK ADA jendela Command Prompt atau terminal hitam</strong> yang muncul dan mengganggu pengguna PC.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 text-xs">
+                    <div class="p-3 rounded-lg bg-slate-800/40 border border-slate-700/60">
+                        <strong class="text-emerald-400 block mb-1">status_client.bat</strong>
+                        <p class="text-slate-400">Cek status background, PID proses aktif, dan jadwal Task Scheduler.</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-slate-800/40 border border-slate-700/60">
+                        <strong class="text-rose-400 block mb-1">stop_client.bat</strong>
+                        <p class="text-slate-400">Hentikan client background seketika tanpa membuka Task Manager.</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-slate-800/40 border border-slate-700/60">
+                        <strong class="text-cyan-400 block mb-1">settings.bat / Shortcut Desktop</strong>
+                        <p class="text-slate-400">Buka antarmuka grafis untuk mengganti IP & Port Server Admin.</p>
                     </div>
                 </div>
 
