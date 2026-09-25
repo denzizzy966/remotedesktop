@@ -312,5 +312,19 @@ A: YA, SECARA STANDAR ARSITEKTUR WINDOWS MEMANG SEPERTI ITU!
           powercfg /change standby-timeout-ac 0
 
 ================================================================================
+11. CARA UNINSTALL CLIENT AGENT
+================================================================================
+A. Di Windows:
+   - Klik kanan `uninstall_windows.bat` (atau `uninstall_service.bat`) -> pilih "Run as administrator".
+   - Skrip otomatis menghentikan proses `LANRemoteClient.exe` / Python, menghapus tugas
+     di Task Scheduler, menghapus shortcut Startup & Desktop, dan memulihkan kebijakan Windows.
+
+B. Di Linux (Ubuntu / Mint):
+   - Buka terminal di folder client:
+       chmod +x uninstall_linux.sh
+       ./uninstall_linux.sh
+   - Skrip otomatis mematikan client agent dan mencopot pendaftaran autostart.
+
+================================================================================
 Dibuat untuk Penggunaan Jaringan Lokal (LAN) Windows 10/11 & Ubuntu 22 / Mint 22
 ================================================================================

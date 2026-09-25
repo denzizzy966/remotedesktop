@@ -228,5 +228,42 @@ sudo ufw allow 8002/udp
 
 ---
 
+## 🗑️ Panduan Uninstall (Pencopotan Pemasangan)
+
+Telah disediakan skrip uninstaller mandiri yang lengkap dan bersih untuk Server maupun Client di Windows dan Linux:
+
+### 1. Server Admin:
+* **Di Windows**:
+  Klik kanan dan pilih *"Run as administrator"* pada file:
+  ```text
+  uninstall_admin_server.bat
+  ```
+  *Menghentikan proses server, menghapus shortcut Desktop & Startup, menghapus aturan firewall, dan membersihkan data jika diinginkan.*
+* **Di Linux (Ubuntu / Mint)**:
+  Buka terminal di folder project:
+  ```bash
+  chmod +x uninstall_admin_server.sh
+  sudo ./uninstall_admin_server.sh
+  ```
+  *Menghentikan dan menghapus systemd background service (`lan-remote-server.service`), menghapus aturan firewall UFW, dan membersihkan data.*
+
+### 2. Client Agent:
+* **Di Windows**:
+  Klik kanan dan pilih *"Run as administrator"* pada file:
+  ```text
+  client\uninstall_windows.bat
+  ```
+  *(Atau jalankan `client\uninstall_service.bat`)*
+  *Menghentikan proses client (`LANRemoteClient.exe` / Python), menghapus tugas di Task Scheduler, menghapus shortcut Startup/Desktop, dan memulihkan kebijakan Windows ke standar.*
+* **Di Linux (Ubuntu / Mint)**:
+  Buka terminal di folder client:
+  ```bash
+  chmod +x client/uninstall_linux.sh
+  ./client/uninstall_linux.sh
+  ```
+  *Menghentikan proses client, menghapus entri autostart desktop (`~/.config/autostart`), dan menghapus konfigurasi.*
+
+---
+
 ## 🛡️ Lisensi & Catatan Keamanan
 Aplikasi ini dirancang khusus untuk pemantauan dan pengelolaan jaringan lokal (**LAN Only**). Jangan mengekspos port 8000 ke internet publik tanpa menambahkan lapisan otentikasi (VPN / HTTPS / Reverse Proxy seperti Nginx dengan Basic Auth).

@@ -28,6 +28,7 @@ DAFTAR ISI:
  8. Manajemen Password & Reset Console
  9. Analisis Komparasi: Di Mana Server Lebih Bagus Di-install?
 10. Tanya Jawab & Troubleshooting Jaringan LAN
+11. Panduan Lengkap Uninstall (Server & Client Windows/Linux)
 
 ================================================================================
 1. RINGKASAN & ARSITEKTUR SISTEM
@@ -454,6 +455,37 @@ A: YA, SECARA STANDAR ARSITEKTUR WINDOWS MEMANG SEPERTI ITU!
         matikan sleep layar di Command Prompt Administrator pada PC client:
           powercfg /change monitor-timeout-ac 0
           powercfg /change standby-timeout-ac 0
+
+================================================================================
+11. PANDUAN LENGKAP UNINSTALL (PENGHAPUSAN BERSIH SERVER & CLIENT)
+================================================================================
+Tersedia skrip pembersihan otomatis untuk mencopot Server dan Client secara bersih:
+
+A. UNINSTALL SERVER ADMIN:
+ 1. Di Windows:
+    - Klik kanan `uninstall_admin_server.bat` -> pilih "Run as administrator".
+    - Skrip otomatis mematikan proses server, mencopot shortcut Desktop/Startup,
+      menghapus aturan firewall, dan menawarkan opsi pembersihan config/notes.
+ 2. Di Linux (Ubuntu Server / Linux Mint):
+    - Jalankan terminal:
+        chmod +x uninstall_admin_server.sh
+        sudo ./uninstall_admin_server.sh
+    - Skrip otomatis menghentikan dan menghapus unit systemd (`lan-remote-server.service`),
+      membersihkan aturan UFW (port 8001/8000/8002), dan menghapus data jika diinginkan.
+
+B. UNINSTALL CLIENT AGENT:
+ 1. Di Windows:
+    - Buka folder `client`.
+    - Klik kanan `uninstall_windows.bat` (atau `uninstall_service.bat`) -> pilih "Run as administrator".
+    - Skrip otomatis menghentikan `LANRemoteClient.exe` / Python, menghapus tugas di
+      Task Scheduler, mencopot shortcut Startup/Desktop, dan memulihkan kebijakan sistem Windows.
+ 2. Di Linux (Ubuntu / Linux Mint):
+    - Buka folder `client`.
+    - Jalankan di terminal:
+        chmod +x uninstall_linux.sh
+        ./uninstall_linux.sh
+    - Skrip otomatis mematikan client agent dan menghapus pendaftaran autostart
+      di `~/.config/autostart/lan-remotedesktop-client.desktop`.
 
 ================================================================================
 Dibuat untuk Penggunaan Jaringan Lokal (LAN) Windows 10/11 & Ubuntu 22 / Mint 22
