@@ -463,7 +463,26 @@ pip3 install pystray --break-system-packages</code></pre>
                     </div>
                 </div>
 
-                <!-- 5.D & 5.E -->
+                <!-- 5.D Offline Installation -->
+                <div class="mb-6 bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+                    <h3 class="text-sm font-semibold text-white flex items-center gap-2 mb-2">
+                        <i class="fa-solid fa-box-open text-emerald-400"></i>
+                        D. Instalasi Client Linux Lengkap & 100% Offline (install_linux.sh)
+                    </h3>
+                    <p class="text-xs text-slate-300 mb-3">
+                        Folder <code class="text-indigo-300 bg-slate-950 px-1.5 py-0.5 rounded">client/offline_packages</code> sudah berisi seluruh binary wheels Linux (<code class="text-indigo-300">manylinux2014_x86_64</code>) untuk Python 3.10 (Ubuntu 22.04 LTS) dan Python 3.12 (Linux Mint 22 / Ubuntu 24.04).
+                    </p>
+                    <div class="code-block mb-3">
+                        <button class="copy-btn" onclick="copyCode(this)">Salin</button>
+                        <pre class="text-xs text-indigo-300"><code>chmod +x install_linux.sh
+./install_linux.sh</code></pre>
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        Skrip secara otomatis mendeteksi paket offline, melewati <code class="text-slate-300">apt-get update</code> jika paket dasar sudah ada, dan menginstal pustaka tanpa memerlukan internet.
+                    </p>
+                </div>
+
+                <!-- 5.E & 5.F -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
                         <h4 class="font-semibold text-white mb-1 flex items-center gap-1.5">

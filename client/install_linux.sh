@@ -29,37 +29,46 @@ wait_for_apt_lock() {
     done
 }
 
-echo "[1/4] Updating system packages & installing required system dependencies..."
-wait_for_apt_lock
-sudo apt-get update -o Acquire::ForceIPv4=true || true
-wait_for_apt_lock
-sudo apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-dev \
-    python3-tk \
-    python3-pil \
-    python3-gi \
-    python3-gi-cairo \
-    gir1.2-ayatanaappindicator3-0.1 \
-    gir1.2-appindicator3-0.1 \
-    scrot \
-    libx11-dev \
-    libxtst-dev \
-    libpng-dev \
-    x11-xserver-utils || true
-
-echo "[2/4] Installing Python requirements..."
-if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
-    REQ_FILE="$SCRIPT_DIR/requirements.txt"
-elif [ -f "$ROOT_DIR/requirements.txt" ]; then
-    REQ_FILE="$ROOT_DIR/requirements.txt"
+# 1. Update apt & install system packages (Hanya jika belum terpasang)
+if command -v python3 >/dev/null 2>&1 && command -v pip3 >/dev/null 2>&1 && python3 -c "import tkinter" >/dev/null 2>&1; then
+    echo "[1/5] Python 3, pip3, dan modul antarmuka sistem sudah terpasang ($(python3 --version))."
 else
-    REQ_FILE=""
+    echo "[1/5] Updating system packages & installing required system dependencies..."
+    wait_for_apt_lock
+    sudo apt-get update -o Acquire::ForceIPv4=true || true
+    wait_for_apt_lock
+    sudo apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-dev \
+        python3-tk \
+        python3-pil \
+        python3-gi \
+        python3-gi-cairo \
+        gir1.2-ayatanaappindicator3-0.1 \
+        gir1.2-appindicator3-0.1 \
+        scrot \
+        libx11-dev \
+        libxtst-dev \
+        libpng-dev \
+        x11-xserver-utils || true
 fi
 
-if [ -n "$REQ_FILE" ]; then
-    pip3 install -r "$REQ_FILE" || pip3 install --break-system-packages -r "$REQ_FILE"
+echo ""
+python3 -c "import sys; print('Python terdeteksi:', sys.version.split()[0])"
+echo ""
+
+echo "[2/5] Installing Python requirements (Online or Offline)..."
+if [ -d "$SCRIPT_DIR/offline_packages" ]; then
+    echo "[OFFLINE MODE] Folder 'client/offline_packages' terdeteksi!"
+    echo "Memasang dependensi client langsung dari cache lokal (tanpa perlu koneksi internet)..."
+    pip3 install --no-index --find-links="$SCRIPT_DIR/offline_packages" -r "$SCRIPT_DIR/requirements.txt" || \
+    pip3 install --no-index --find-links="$SCRIPT_DIR/offline_packages" --break-system-packages -r "$SCRIPT_DIR/requirements.txt" || \
+    pip3 install -r "$SCRIPT_DIR/requirements.txt" || pip3 install --break-system-packages -r "$SCRIPT_DIR/requirements.txt"
+elif [ -f "$SCRIPT_DIR/requirements.txt" ]; then
+    pip3 install -r "$SCRIPT_DIR/requirements.txt" || pip3 install --break-system-packages -r "$SCRIPT_DIR/requirements.txt"
+elif [ -f "$ROOT_DIR/requirements.txt" ]; then
+    pip3 install -r "$ROOT_DIR/requirements.txt" || pip3 install --break-system-packages -r "$ROOT_DIR/requirements.txt"
 else
     pip3 install websockets psutil mss pillow pynput pyautogui pyperclip requests pystray || pip3 install --break-system-packages websockets psutil mss pillow pynput pyautogui pyperclip requests pystray
 fi

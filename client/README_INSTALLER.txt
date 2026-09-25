@@ -145,6 +145,11 @@ Langkah-langkah:
  3. Beri izin eksekusi dan jalankan script installer:
       chmod +x install_linux.sh
       ./install_linux.sh
+    - FITUR OFFLINE: Folder 'client/offline_packages' sudah menyertakan paket wheel
+      binary Linux x86_64 ('manylinux2014_x86_64') untuk Python 3.10 (Ubuntu 22.04 LTS)
+      dan Python 3.12 (Linux Mint 22 / Ubuntu 24.04).
+    - Installer secara otomatis mendeteksi paket offline lokal tersebut dan memasangnya
+      tanpa perlu koneksi internet!
  4. Masukkan IP Server Admin dan Port saat diminta (atau kosongkan untuk auto-discovery).
  5. Installer akan mengonfigurasi autostart desktop secara otomatis di
     `~/.config/autostart/lan-remotedesktop-client.desktop`.

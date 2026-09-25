@@ -198,7 +198,10 @@ Folder `client\offline_packages` telah berisi seluruh file `.whl` dependensi yan
    chmod +x client/install_linux.sh
    ./client/install_linux.sh
    ```
-   *Script ini otomatis menginstal dependensi sistem (`python3-tk`, `libx11-dev`, dll.), dependensi pip, dan menambahkan autostart.*
+   *Script ini otomatis:*
+   - **Mode Offline Otomatis**: Mendeteksi folder `client/offline_packages` dan memasang pustaka binary wheel Linux x86_64 (`pillow`, `websockets`, `psutil`, `charset-normalizer`, `pystray`, `pyautogui`, dll.) untuk Python 3.10 dan 3.12 tanpa butuh koneksi internet.
+   - **Bypass Apt Cerdas**: Melewati `apt-get update` jika paket dasar sudah ada, mencegah benturan dengan `unattended-upgrades`.
+   - Mengonfigurasi autostart desktop otomatis di `~/.config/autostart`.
 4. Jalankan client:
    ```bash
    ./client/run_client.sh
