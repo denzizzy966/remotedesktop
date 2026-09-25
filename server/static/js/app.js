@@ -6,6 +6,7 @@ class AdminDashboard {
         this.searchQuery = "";
         this.osFilter = "all";
         this.statusFilter = "all";
+        this.viewMode = localStorage.getItem("admin_view_mode") || "grid_preview";
         this.activeTerminalClientId = null;
         this.activeProcessClientId = null;
         this.token = localStorage.getItem("admin_token") || "";
@@ -31,6 +32,7 @@ class AdminDashboard {
             console.error("Auth verification error:", e);
         }
 
+        this.updateViewModeButtons();
         this.initWebSocket();
         this.initEventListeners();
         this.fetchServerInfo();
@@ -232,6 +234,33 @@ class AdminDashboard {
         });
     }
 
+    setViewMode(mode) {
+        if (!["grid_preview", "grid_compact", "list"].includes(mode)) {
+            mode = "grid_preview";
+        }
+        this.viewMode = mode;
+        localStorage.setItem("admin_view_mode", mode);
+        this.updateViewModeButtons();
+        this.renderDashboard();
+    }
+
+    updateViewModeButtons() {
+        const modes = [
+            { id: "viewBtnGridPreview", mode: "grid_preview" },
+            { id: "viewBtnGridCompact", mode: "grid_compact" },
+            { id: "viewBtnList", mode: "list" }
+        ];
+        modes.forEach(m => {
+            const btn = document.getElementById(m.id);
+            if (!btn) return;
+            if (this.viewMode === m.mode) {
+                btn.className = "px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center space-x-1.5 bg-indigo-600 text-white shadow-sm transition";
+            } else {
+                btn.className = "px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition";
+            }
+        });
+    }
+
     renderDashboard() {
         const allClients = Array.from(this.clients.values());
         const filtered = this.getFilteredClients();
@@ -258,7 +287,7 @@ class AdminDashboard {
         document.getElementById("statInSessionClients").textContent = inSessionCount;
         document.getElementById("statAvgUsage").textContent = `${avgCpu}% / ${avgRam}%`;
 
-        // Render Client Grid
+        // Render Client Grid / List Container
         const grid = document.getElementById("clientGrid");
         const emptyState = document.getElementById("emptyState");
 
@@ -269,10 +298,24 @@ class AdminDashboard {
         }
 
         emptyState.classList.add("hidden");
-        grid.innerHTML = filtered.map(c => this.generateClientCardHtml(c)).join("");
+
+        // 3 View Modes
+        if (this.viewMode === "grid_compact") {
+            // Mode 2: Grid Minimalis (Nama, IP, Tombol Aksi)
+            grid.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
+            grid.innerHTML = filtered.map(c => this.generateClientCardCompactHtml(c)).join("");
+        } else if (this.viewMode === "list") {
+            // Mode 3: List / Tabel
+            grid.className = "w-full";
+            grid.innerHTML = this.generateClientListTableHtml(filtered);
+        } else {
+            // Mode 1 (Default): Grid dengan Live Screen Preview
+            grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+            grid.innerHTML = filtered.map(c => this.generateClientCardPreviewHtml(c)).join("");
+        }
     }
 
-    generateClientCardHtml(c) {
+    generateClientCardPreviewHtml(c) {
         const m = c.metrics || {};
         const isOnline = c.status === "online" || c.status === "in_session";
         const isInSession = c.status === "in_session";
@@ -507,6 +550,378 @@ class AdminDashboard {
                     </button>
                 </div>
             </div>
+        </div>
+        `;
+    }
+
+    generateClientCardHtml(c) {
+        return this.generateClientCardPreviewHtml(c);
+    }
+
+    // --- Mode 2: Grid Minimalis (Nama, IP, dan Tombol Aksi) ---
+    generateClientCardCompactHtml(c) {
+        const m = c.metrics || {};
+        const isOnline = c.status === "online" || c.status === "in_session";
+        const isInSession = c.status === "in_session";
+
+        // Status Badge
+        let statusBadge = '';
+        if (isInSession) {
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-900/80 text-indigo-300 border border-indigo-500/30">
+                <span class="w-1.5 h-1.5 mr-1 rounded-full bg-indigo-400 animate-pulse"></span> In Session
+            </span>`;
+        } else if (isOnline) {
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-900/80 text-emerald-300 border border-emerald-500/30">
+                <span class="w-1.5 h-1.5 mr-1 rounded-full bg-emerald-400"></span> Online
+            </span>`;
+        } else {
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                <span class="w-1.5 h-1.5 mr-1 rounded-full bg-slate-500"></span> Offline
+            </span>`;
+        }
+
+        // OS Icon
+        let osIcon = '<i class="fa-brands fa-linux text-amber-400 text-base"></i>';
+        if (c.os_type === "windows") {
+            osIcon = '<i class="fa-brands fa-windows text-blue-400 text-base"></i>';
+        } else if (c.os_name && c.os_name.toLowerCase().includes("ubuntu")) {
+            osIcon = '<i class="fa-brands fa-ubuntu text-orange-400 text-base"></i>';
+        } else if (c.os_name && c.os_name.toLowerCase().includes("mint")) {
+            osIcon = '<i class="fa-brands fa-linux text-emerald-400 text-base"></i>';
+        }
+
+        const cpuPct = m.cpu_percent != null ? m.cpu_percent : 0;
+        const ramPct = m.ram_percent != null ? m.ram_percent : 0;
+
+        const aliasText = (c.alias || "").trim();
+        const noteText = (c.note || "").trim();
+
+        let titleHtml = '';
+        if (aliasText) {
+            titleHtml = `
+                <div class="min-w-0">
+                    <h3 class="text-sm font-bold text-white tracking-wide flex items-center group">
+                        <span class="text-indigo-400 mr-1 shrink-0"><i class="fa-solid fa-tag text-[10px]"></i></span>
+                        <span class="truncate max-w-[140px]" title="${aliasText}">${aliasText}</span>
+                        <button onclick="app.openNoteModal('${c.device_id}')" title="Edit Nama & Catatan" class="ml-1.5 text-slate-500 hover:text-indigo-400 text-[10px] transition shrink-0">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                    </h3>
+                    <p class="text-[10px] text-slate-400 truncate max-w-[140px]">${c.hostname || 'Device'}</p>
+                </div>
+            `;
+        } else {
+            titleHtml = `
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-white tracking-wide flex items-center">
+                        <span class="truncate max-w-[140px]" title="${c.hostname || 'Unknown'}">${c.hostname || "Unknown Host"}</span>
+                        <button onclick="app.openNoteModal('${c.device_id}')" title="Beri Nama / Catatan" class="ml-1 text-slate-500 hover:text-indigo-400 text-[10px] transition shrink-0">
+                            <i class="fa-solid fa-tag"></i>
+                        </button>
+                    </h3>
+                    <p class="text-[10px] text-slate-400 truncate max-w-[140px]">${c.username || 'user'}</p>
+                </div>
+            `;
+        }
+
+        let noteHtml = '';
+        if (noteText) {
+            noteHtml = `
+                <div class="mb-2 px-2 py-1 rounded bg-slate-950/70 border border-slate-800 text-amber-300/90 text-[10px] flex items-center justify-between gap-1.5">
+                    <span class="truncate" title="${noteText}">
+                        <i class="fa-regular fa-note-sticky text-amber-400 mr-1"></i>${noteText}
+                    </span>
+                    <button onclick="app.openNoteModal('${c.device_id}')" class="text-slate-500 hover:text-amber-300 shrink-0">
+                        <i class="fa-solid fa-pen text-[9px]"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        return `
+        <div class="client-card bg-slate-900/90 border border-slate-800 hover:border-slate-700/80 rounded-xl p-3.5 shadow-md backdrop-blur-sm flex flex-col justify-between">
+            <div>
+                <!-- Header: OS Icon, Name, Status -->
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        <div class="p-2 rounded-lg bg-slate-800 border border-slate-700/60 shrink-0">
+                            ${osIcon}
+                        </div>
+                        ${titleHtml}
+                    </div>
+                    <div class="shrink-0">
+                        ${statusBadge}
+                    </div>
+                </div>
+
+                <!-- IP Address Box -->
+                <div class="flex items-center justify-between text-xs py-1 px-2 bg-slate-950/80 rounded border border-slate-800/80 mb-2">
+                    <div class="flex items-center space-x-1.5 min-w-0">
+                        <i class="fa-solid fa-network-wired text-slate-500 text-[10px]"></i>
+                        <span class="font-mono text-cyan-400 font-semibold truncate select-all text-xs">${c.ip_address}</span>
+                    </div>
+                    <button onclick="app.copyText('${c.ip_address}')" title="Copy IP" class="text-slate-500 hover:text-slate-300 text-xs px-0.5">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+
+                <!-- Note (if any) -->
+                ${noteHtml}
+
+                <!-- Sub-info: OS Name & CPU/RAM usage -->
+                <div class="flex items-center justify-between text-[10px] text-slate-400 mb-3 px-0.5">
+                    <span class="truncate max-w-[110px]" title="${c.os_name || 'OS'}">
+                        ${c.os_name ? c.os_name.replace('Microsoft ', '') : 'Unknown'}
+                    </span>
+                    <span class="font-mono text-slate-300">
+                        <span class="${cpuPct > 80 ? 'text-rose-400 font-bold' : 'text-slate-400'}">C:${cpuPct}%</span>
+                        <span class="text-slate-600 mx-0.5">/</span>
+                        <span class="${ramPct > 85 ? 'text-rose-400 font-bold' : 'text-slate-400'}">R:${ramPct}%</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="pt-2 border-t border-slate-800">
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button onclick="app.openRemoteViewer('${c.device_id}')" 
+                        ${!isOnline ? 'disabled' : ''} 
+                        class="col-span-2 flex items-center justify-center px-2 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm">
+                        <i class="fa-solid fa-display mr-1"></i> Remote
+                    </button>
+                    
+                    <button onclick="app.openTerminal('${c.device_id}')" 
+                        ${!isOnline ? 'disabled' : ''} 
+                        title="Remote Terminal"
+                        class="flex items-center justify-center p-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition border border-slate-700">
+                        <i class="fa-solid fa-terminal"></i>
+                    </button>
+
+                    <button onclick="app.openProcessManager('${c.device_id}')" 
+                        ${!isOnline ? 'disabled' : ''} 
+                        title="Task Manager"
+                        class="flex items-center justify-center p-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition border border-slate-700">
+                        <i class="fa-solid fa-list-check"></i>
+                    </button>
+                </div>
+
+                <!-- Mini Power Controls -->
+                <div class="mt-2 flex justify-between items-center text-[10px] text-slate-500 px-0.5">
+                    <span class="font-mono text-[9px] text-slate-600 truncate max-w-[80px]" title="${c.device_id}">${c.device_id}</span>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="app.confirmPowerAction('${c.device_id}', 'lock')" ${!isOnline ? 'disabled' : ''} class="hover:text-amber-400 disabled:opacity-30 transition" title="Lock Screen">
+                            <i class="fa-solid fa-lock"></i>
+                        </button>
+                        <button onclick="app.confirmPowerAction('${c.device_id}', 'reboot')" ${!isOnline ? 'disabled' : ''} class="hover:text-sky-400 disabled:opacity-30 transition" title="Reboot System">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                        <button onclick="app.confirmPowerAction('${c.device_id}', 'shutdown')" ${!isOnline ? 'disabled' : ''} class="hover:text-rose-400 disabled:opacity-30 transition" title="Shutdown System">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    // --- Mode 3: List / Tabel View ---
+    generateClientListTableHtml(clients) {
+        const rowsHtml = clients.map(c => {
+            const m = c.metrics || {};
+            const isOnline = c.status === "online" || c.status === "in_session";
+            const isInSession = c.status === "in_session";
+
+            // Status Badge
+            let statusBadge = '';
+            if (isInSession) {
+                statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-900/80 text-indigo-300 border border-indigo-500/30">
+                    <span class="w-2 h-2 mr-1.5 rounded-full bg-indigo-400 animate-pulse"></span> In Session
+                </span>`;
+            } else if (isOnline) {
+                statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-900/80 text-emerald-300 border border-emerald-500/30">
+                    <span class="w-2 h-2 mr-1.5 rounded-full bg-emerald-400"></span> Online
+                </span>`;
+            } else {
+                statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                    <span class="w-2 h-2 mr-1.5 rounded-full bg-slate-500"></span> Offline
+                </span>`;
+            }
+
+            // OS Icon
+            let osIcon = '<i class="fa-brands fa-linux text-amber-400 text-base"></i>';
+            if (c.os_type === "windows") {
+                osIcon = '<i class="fa-brands fa-windows text-blue-400 text-base"></i>';
+            } else if (c.os_name && c.os_name.toLowerCase().includes("ubuntu")) {
+                osIcon = '<i class="fa-brands fa-ubuntu text-orange-400 text-base"></i>';
+            } else if (c.os_name && c.os_name.toLowerCase().includes("mint")) {
+                osIcon = '<i class="fa-brands fa-linux text-emerald-400 text-base"></i>';
+            }
+
+            const cpuPct = m.cpu_percent != null ? m.cpu_percent : 0;
+            const ramPct = m.ram_percent != null ? m.ram_percent : 0;
+            const diskPct = m.disk_percent != null ? m.disk_percent : 0;
+
+            const aliasText = (c.alias || "").trim();
+            const noteText = (c.note || "").trim();
+
+            let titleHtml = '';
+            if (aliasText) {
+                titleHtml = `
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-indigo-400"><i class="fa-solid fa-tag text-xs"></i></span>
+                        <span class="font-bold text-white text-sm hover:text-indigo-300 cursor-pointer" onclick="app.openNoteModal('${c.device_id}')">${aliasText}</span>
+                        <span class="text-slate-400 text-xs">(${c.hostname || 'Device'})</span>
+                    </div>
+                `;
+            } else {
+                titleHtml = `
+                    <div class="flex items-center space-x-1.5">
+                        <span class="font-semibold text-white text-sm hover:text-indigo-300 cursor-pointer" onclick="app.openNoteModal('${c.device_id}')">${c.hostname || "Unknown Host"}</span>
+                    </div>
+                `;
+            }
+
+            let noteCell = '';
+            if (noteText) {
+                noteCell = `
+                    <div class="flex items-center space-x-1 text-amber-300/90 text-xs group cursor-pointer" onclick="app.openNoteModal('${c.device_id}')">
+                        <i class="fa-regular fa-note-sticky text-amber-400 mr-0.5"></i>
+                        <span class="truncate max-w-[140px]" title="${noteText}">${noteText}</span>
+                        <i class="fa-solid fa-pen text-[9px] text-slate-500 group-hover:text-amber-300 opacity-0 group-hover:opacity-100 transition"></i>
+                    </div>
+                `;
+            } else {
+                noteCell = `
+                    <button onclick="app.openNoteModal('${c.device_id}')" class="text-slate-500 hover:text-indigo-400 text-xs transition">
+                        <i class="fa-solid fa-plus text-[10px] mr-1"></i>Note
+                    </button>
+                `;
+            }
+
+            return `
+            <tr class="hover:bg-slate-800/40 transition">
+                <!-- Status -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    ${statusBadge}
+                </td>
+
+                <!-- Device & Name -->
+                <td class="py-3 px-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 rounded-lg bg-slate-800 border border-slate-700/60 shrink-0">
+                            ${osIcon}
+                        </div>
+                        <div>
+                            ${titleHtml}
+                            <div class="text-[11px] text-slate-500 font-mono flex items-center space-x-1.5">
+                                <span>${c.username || 'user'}</span>
+                                <span>&bull;</span>
+                                <span>${c.device_id}</span>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+                <!-- IP Address -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="font-mono text-cyan-400 font-semibold select-all text-xs">${c.ip_address}</span>
+                        <button onclick="app.copyText('${c.ip_address}')" title="Copy IP" class="text-slate-500 hover:text-slate-300 text-xs">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </td>
+
+                <!-- OS & Uptime -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="text-xs text-slate-300">${c.os_name || 'Unknown'}</div>
+                    <div class="text-[11px] text-slate-500 flex items-center mt-0.5">
+                        <i class="fa-regular fa-clock mr-1 text-slate-500"></i>
+                        <span>${m.uptime_str || "N/A"}</span>
+                    </div>
+                </td>
+
+                <!-- CPU / RAM / Disk -->
+                <td class="py-3 px-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2 text-xs">
+                        <span class="${cpuPct > 80 ? 'text-rose-400 font-bold' : 'text-slate-300'}" title="CPU Usage">
+                            <i class="fa-solid fa-microchip text-slate-500 mr-1"></i>${cpuPct}%
+                        </span>
+                        <span class="text-slate-600">|</span>
+                        <span class="${ramPct > 85 ? 'text-rose-400 font-bold' : 'text-slate-300'}" title="RAM Usage (${m.ram_used_gb || 0}/${m.ram_total_gb || 0} GB)">
+                            <i class="fa-solid fa-memory text-slate-500 mr-1"></i>${ramPct}%
+                        </span>
+                        <span class="text-slate-600">|</span>
+                        <span class="text-slate-400" title="Storage Usage">
+                            <i class="fa-solid fa-hard-drive text-slate-500 mr-1"></i>${diskPct}%
+                        </span>
+                    </div>
+                </td>
+
+                <!-- Catatan / Note -->
+                <td class="py-3 px-4">
+                    ${noteCell}
+                </td>
+
+                <!-- Aksi -->
+                <td class="py-3 px-4 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end space-x-1.5">
+                        <button onclick="app.openRemoteViewer('${c.device_id}')" 
+                            ${!isOnline ? 'disabled' : ''} 
+                            class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-sm inline-flex items-center">
+                            <i class="fa-solid fa-display mr-1"></i> Remote
+                        </button>
+                        
+                        <button onclick="app.openTerminal('${c.device_id}')" 
+                            ${!isOnline ? 'disabled' : ''} 
+                            title="Remote Terminal"
+                            class="p-1.5 rounded-lg text-xs text-slate-200 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition border border-slate-700">
+                            <i class="fa-solid fa-terminal"></i>
+                        </button>
+
+                        <button onclick="app.openProcessManager('${c.device_id}')" 
+                            ${!isOnline ? 'disabled' : ''} 
+                            title="Task Manager"
+                            class="p-1.5 rounded-lg text-xs text-slate-200 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition border border-slate-700">
+                            <i class="fa-solid fa-list-check"></i>
+                        </button>
+
+                        <div class="flex items-center space-x-1 pl-1 border-l border-slate-800">
+                            <button onclick="app.confirmPowerAction('${c.device_id}', 'lock')" ${!isOnline ? 'disabled' : ''} class="p-1 hover:text-amber-400 text-slate-400 text-xs disabled:opacity-30 transition" title="Lock Screen">
+                                <i class="fa-solid fa-lock"></i>
+                            </button>
+                            <button onclick="app.confirmPowerAction('${c.device_id}', 'reboot')" ${!isOnline ? 'disabled' : ''} class="p-1 hover:text-sky-400 text-slate-400 text-xs disabled:opacity-30 transition" title="Reboot System">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </button>
+                            <button onclick="app.confirmPowerAction('${c.device_id}', 'shutdown')" ${!isOnline ? 'disabled' : ''} class="p-1 hover:text-rose-400 text-slate-400 text-xs disabled:opacity-30 transition" title="Shutdown System">
+                                <i class="fa-solid fa-power-off"></i>
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            `;
+        }).join("");
+
+        return `
+        <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/80 shadow-xl backdrop-blur">
+            <table class="w-full text-left border-collapse text-xs whitespace-nowrap min-w-[700px]">
+                <thead>
+                    <tr class="border-b border-slate-800 bg-slate-950/80 text-slate-400 text-[11px] uppercase tracking-wider font-semibold">
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Komputer / Device</th>
+                        <th class="py-3 px-4">Alamat IP</th>
+                        <th class="py-3 px-4">OS & Uptime</th>
+                        <th class="py-3 px-4">CPU / RAM / Disk</th>
+                        <th class="py-3 px-4">Catatan (Note)</th>
+                        <th class="py-3 px-4 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    ${rowsHtml}
+                </tbody>
+            </table>
         </div>
         `;
     }
