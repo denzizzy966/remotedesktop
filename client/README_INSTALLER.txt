@@ -81,6 +81,15 @@ CARA C: Edit Manual File `config.json`
    }
  Anda dapat mengubah `server_ip` dan `server_port` kapan saja dengan Notepad.
 
+CARA D: Antarmuka Grafis (UI Settings) - Paling Cepat & Praktis
+ Kapan saja ingin mengganti IP / Port server tanpa edit file:
+   1. Melalui System Tray: Klik ganda (Double-Click) ikon monitor di System Tray taskbar
+      (atau klik kanan -> Pengaturan Server).
+   2. Melalui Shortcut Langsung:
+      - Di Windows: Klik ganda file `settings.bat` (atau `LANRemoteClient.exe --settings`)
+      - Di Linux: Jalankan `./settings.sh` (atau `python3 client.py --settings`)
+   Jendela pengaturan grafis akan muncul. Ketik IP Server baru dan klik "Simpan & Sambungkan".
+
 ================================================================================
 4. PANDUAN INSTALASI CLIENT (WINDOWS 10 / WINDOWS 11)
 ================================================================================

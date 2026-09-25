@@ -92,6 +92,18 @@ CARA C: Edit Manual File `config.json`
    }
  Anda dapat mengubah `server_ip` dan `server_port` kapan saja dengan Notepad.
 
+CARA D: Antarmuka Grafis (UI Settings) - Paling Mudah & Praktis
+ Kapan saja Anda ingin mengganti IP / Port server tanpa repot mengedit teks:
+   1. Melalui System Tray:
+      - Klik ganda (Double-Click) ikon monitor di System Tray taskbar, ATAU
+      - Klik kanan ikon System Tray -> pilih "Pengaturan Server (Ganti IP/Port)..."
+   2. Melalui Shortcut Langsung:
+      - Di Windows: Klik ganda file `client/settings.bat` (atau `LANRemoteClient.exe --settings`)
+      - Di Linux: Jalankan `./client/settings.sh` (atau `python3 client.py --settings`)
+   Jendela pengaturan grafis modern akan terbuka. Cukup ketik IP Server baru dan
+   klik tombol "Simpan & Sambungkan". Client akan otomatis menyimpan ke config.json
+   dan langsung menyambungkan ulang ke server baru secara instan!
+
 ================================================================================
 4. PANDUAN INSTALASI CLIENT (WINDOWS 10 / WINDOWS 11)
 ================================================================================
@@ -182,18 +194,44 @@ A. FITUR & TAMPILAN SYSTEM TRAY LINUX:
 
 B. CARA INSTALL DEPENDENSI SYSTEM TRAY DI LINUX:
  Buka terminal di folder client pada Linux Mint / Ubuntu:
-   # Opsi 1 (Rekomendasi via pip):
-   pip3 install pystray --break-system-packages
+   # 1. Pasang paket sistem untuk integrasi panel AppIndicator & Tkinter:
+   sudo apt-get update
+   sudo apt-get install -y python3-gi python3-gi-cairo gir1.2-ayatanaappindicator3-0.1 python3-tk
 
-   # Atau jika di Ubuntu/Debian yang menyediakan paket apt:
-   sudo apt install -y python3-pystray
+   # 2. Pasang pystray via pip:
+   pip3 install pystray --break-system-packages
 
    # Untuk mesin offline:
    Telah disediakan wheel di folder `client/offline_packages/pystray-0.19.5-py2.py3-none-any.whl`
    pip3 install --no-index --find-links=offline_packages pystray --break-system-packages
 
- *(Catatan: Jika pystray belum terpasang, client tetap akan berjalan normal
-  di latar belakang tanpa crash).*
+ ===============================================================================
+ PENTING: MENGAPA IKON SYSTEM TRAY TIDAK MUNCUL & CARA MENGATASINYA:
+ ===============================================================================
+ 1. DI WINDOWS 10 / WINDOWS 11:
+    - Masalah: Di Windows 11, taskbar secara default menyembunyikan ikon aplikasi
+      baru ke dalam menu "Hidden Icons" (tanda panah panah atas `^` di samping jam).
+    - Solusi:
+      a. Klik tanda panah `^` di taskbar sebelah kanan (dekat jam). Ikon LAN Remote
+         Desktop akan terlihat di sana.
+      b. Agar selalu muncul di taskbar utama tanpa tersembunyi:
+         Buka Windows Settings -> Personalization -> Taskbar -> Other system tray icons
+         (atau Taskbar corner overflow) -> Cari "LAN Remote Desktop Client" -> Geser ke "ON".
+      c. Catatan Session 0: Jika client dijalankan sebagai Windows Service tingkat kernel
+         (bukan via Task Scheduler onlogon), sistem Windows memblokir tampilan GUI / Tray
+         (Session 0 Isolation). Selalu gunakan `install_service.bat` (Task Scheduler)
+         atau letakkan shortcut di `shell:startup`.
+
+ 2. DI LINUX MINT (CINNAMON) & UBUNTU (GNOME):
+    - Masalah 1: Dijalankan dengan 'sudo' (sudo ./run_client.sh)
+      Penyebab: Akun root tidak memiliki akses ke sesi DBus dan X11 desktop user!
+      Solusi: JANGAN JALANKAN DENGAN SUDO. Jalankan sebagai pengguna desktop biasa:
+              ./run_client.sh
+    - Masalah 2: Paket AppIndicator belum terpasang.
+      Penyebab: Desktop Cinnamon dan GNOME memerlukan pustaka GObject Introspection.
+      Solusi: Jalankan perintah:
+              sudo apt-get install -y python3-gi gir1.2-ayatanaappindicator3-0.1 python3-tk
+ ===============================================================================
 
 C. CARA MENGAKTIFKAN AUTOSTART SAAT BOOT / LOGIN DI LINUX:
  Anda memiliki 2 cara mudah:
@@ -270,25 +308,34 @@ Jawaban: SANGAT BISA DAN SANGAT DIREKOMENDASIKAN!
 Server dirancang sepenuhnya "Headless" (tidak butuh GUI desktop pada mesin server),
 karena server hanya bertindak sebagai backend API, WebSocket hub, dan Web Server.
 
-Langkah Instalasi di Ubuntu Server (via SSH / Console):
- 1. Upload/git clone folder project ke Ubuntu Server:
-      scp -r remotedesktop user@192.168.1.10:/opt/remotedesktop
-      cd /opt/remotedesktop
- 2. Jalankan script installer otomatis untuk Linux:
+Langkah Instalasi di Ubuntu / Linux Server (via SSH / Console):
+ 1. OPSI 1: PEMASANGAN SYSTEMD SERVICE OTOMATIS (1 PERINTAH - PALING DIREKOMENDASIKAN)
+    Telah disediakan skrip khusus untuk mendaftarkan dan menjalankan server sebagai
+    background systemd service yang berjalan 24/7 dan otomatis aktif saat booting:
+      chmod +x install_server_service.sh uninstall_server_service.sh
+      sudo ./install_server_service.sh
+
+    Skrip ini secara otomatis:
+      - Menghasilkan file `/etc/systemd/system/lan-remote-server.service`
+      - Mengatur user non-root aktif dan direktori kerja
+      - Membuka port firewall UFW (8001/tcp, 8000/tcp, 8002/udp)
+      - Mengaktifkan autostart (`systemctl enable`) dan menyalakan service sekarang
+
+    Perintah manajemen service Linux:
+      - Cek status : sudo systemctl status lan-remote-server
+      - Cek log    : sudo journalctl -u lan-remote-server -f
+      - Restart    : sudo systemctl restart lan-remote-server
+      - Berhenti   : sudo systemctl stop lan-remote-server
+      - Hapus      : sudo ./uninstall_server_service.sh
+
+ 2. OPSI 2: WIZARD LENGKAP VIA `install_admin_server.sh`
+    Jika Anda ingin instalasi interaktif dari awal (termasuk reset password admin):
       chmod +x install_admin_server.sh
       sudo ./install_admin_server.sh
- 3. Script ini akan:
-    - Memasang python3, python3-pip, python3-venv.
-    - Menginstal requirements server.
-    - Menawarkan opsi pembuatan Systemd Service otomatis (24/7 background service).
- 4. Jika Anda memilih 'Y' pada opsi Systemd:
-    Server akan berjalan otomatis saat Ubuntu Server booting:
-      sudo systemctl start lan-remotedesktop
-      sudo systemctl status lan-remotedesktop
-      sudo systemctl enable lan-remotedesktop  (otomatis nyala saat boot)
- 5. Buka browser di komputer mana saja dalam LAN:
+
+ 3. Buka browser di komputer mana saja dalam LAN:
       http://[IP-UBUNTU-SERVER]:8001
-    (Contoh: http://192.168.1.10:8001)
+    (Contoh: http://192.168.1.10:8001 atau http://192.168.8.251:8001)
 
 ================================================================================
 8. MANAJEMEN PASSWORD & RESET CONSOLE

@@ -80,6 +80,7 @@ try:
     from screen_capture import ScreenCapture
     from input_handler import InputHandler
     from tray_icon import ClientTrayIcon
+    from settings_ui import open_settings_window
 except ImportError:
     from client.system_info import (
         get_system_metrics,
@@ -95,6 +96,10 @@ except ImportError:
         from client.tray_icon import ClientTrayIcon
     except ImportError:
         ClientTrayIcon = None
+    try:
+        from client.settings_ui import open_settings_window
+    except ImportError:
+        open_settings_window = None
 
 class RemoteClient:
     def __init__(self, server_url=None, auto_discover=None, enable_tray=True):
@@ -103,6 +108,7 @@ class RemoteClient:
         self.auto_discover = auto_discover
         self.enable_tray = enable_tray
         self.ws = None
+        self.loop = None
         self.screen_capture = ScreenCapture()
         self.input_handler = InputHandler()
         self.tray = ClientTrayIcon(self) if (ClientTrayIcon and enable_tray) else None
@@ -115,6 +121,28 @@ class RemoteClient:
         self.load_config()
         if self.auto_discover is None:
             self.auto_discover = True
+
+    def apply_new_config(self, ip: str, port: int, auto_discover: bool):
+        """Called by settings UI to update config and reconnect immediately."""
+        print(f"[Config] Menerapkan pengaturan baru: IP={ip}, Port={port}, AutoDiscover={auto_discover}")
+        self.auto_discover = auto_discover
+        if ip:
+            clean_ip = parse_ip_address(ip) or ip
+            self.server_url = f"ws://{clean_ip}:{port}/ws/client/{self.device_id}"
+            srv_label = f"{clean_ip}:{port}"
+        else:
+            self.server_url = None
+            srv_label = "Auto-Discovery"
+
+        if self.tray:
+            self.tray.update_status(connected=False, server_str=srv_label)
+
+        # Trigger immediate reconnect by closing current websocket if active
+        if self.ws and not self.ws.closed and self.loop and self.loop.is_running():
+            try:
+                asyncio.run_coroutine_threadsafe(self.ws.close(), self.loop)
+            except Exception as e:
+                print(f"[Config] Reconnect notice: {e}")
 
     def load_config(self):
         """Loads configuration from config.json if present."""
@@ -204,6 +232,7 @@ class RemoteClient:
         return None
 
     async def start(self):
+        self.loop = asyncio.get_running_loop()
         cfg_path = get_config_file_path()
         cfg_status = "Ditemukan" if os.path.exists(cfg_path) else "Default"
         print(f"==================================================")
@@ -464,9 +493,19 @@ def main():
     parser.add_argument("--server", type=str, help="Server WebSocket URL (e.g. ws://192.168.8.167:8001/ws/client/xyz)")
     parser.add_argument("--ip", "-i", type=str, help="Server IP address (e.g. 192.168.8.167)")
     parser.add_argument("--port", "-p", type=int, default=None, help="Server port (default: 8001)")
+    parser.add_argument("--settings", "--config-gui", action="store_true", help="Buka jendela UI Pengaturan IP / Port Server")
     parser.add_argument("--no-discover", action="store_true", help="Disable automatic LAN server discovery via UDP")
     parser.add_argument("--no-tray", action="store_true", help="Disable system tray icon (useful for headless servers)")
     args = parser.parse_args()
+
+    if args.settings:
+        if open_settings_window:
+            print("[Settings] Membuka jendela pengaturan IP/Port...")
+            open_settings_window()
+            return
+        else:
+            print("[Settings Error] GUI Pengaturan tidak dapat dibuka (Tkinter tidak tersedia).")
+            return
 
     server_url = args.server
     dev_id = get_device_id()

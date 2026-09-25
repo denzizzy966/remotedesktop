@@ -212,9 +212,9 @@
                     <h2 class="text-xl font-bold text-white">3. Cara Mengatur Server IP & Port pada Client</h2>
                 </div>
                 <p class="text-sm text-slate-300 leading-relaxed mb-4">
-                    Tersedia 3 metode fleksibel untuk mengatur alamat server pada client:
+                    Tersedia 4 metode fleksibel untuk mengatur alamat server pada client:
                 </p>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                     <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4">
                         <span class="badge-pill bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 mb-2">Cara A - Installer</span>
                         <h4 class="font-semibold text-white text-sm mb-1">Installer Interaktif</h4>
@@ -234,6 +234,13 @@
                         <h4 class="font-semibold text-white text-sm mb-1">Manual config.json</h4>
                         <p class="text-slate-300 leading-relaxed">
                             Buka file <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">client/config.json</code> dengan Notepad / Text Editor, masukkan nilai <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">server_ip</code> dan <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">server_port</code>.
+                        </p>
+                    </div>
+                    <div class="bg-slate-800/40 border border-purple-500/60 rounded-xl p-4 bg-purple-950/20">
+                        <span class="badge-pill bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-2">Cara D - UI Settings</span>
+                        <h4 class="font-semibold text-white text-sm mb-1">Antarmuka GUI</h4>
+                        <p class="text-slate-300 leading-relaxed">
+                            Double-click ikon System Tray atau jalankan <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">settings.bat</code> / <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">settings.sh</code> untuk membuka jendela pengaturan IP/Port grafis yang tersimpan otomatis.
                         </p>
                     </div>
                 </div>
@@ -390,19 +397,26 @@
                     </p>
                     <div class="code-block mb-3">
                         <button class="copy-btn" onclick="copyCode(this)">Salin</button>
-                        <pre class="text-xs text-indigo-300"><code># Opsi 1: Pasang via pip (Paling Cepat & Lengkap)
-pip3 install pystray --break-system-packages
+                        <pre class="text-xs text-indigo-300"><code># 1. Pasang paket sistem panel AppIndicator & Tkinter:
+sudo apt update && sudo apt install -y python3-gi python3-gi-cairo gir1.2-ayatanaappindicator3-0.1 python3-tk
 
-# Opsi 2: Atau via paket repository distro (Debian/Ubuntu)
-sudo apt update && sudo apt install -y python3-pystray
-
-# Opsi 3: Instalasi Offline tanpa internet (File .whl sudah kami sediakan)
-cd client
-pip3 install --no-index --find-links=offline_packages pystray --break-system-packages</code></pre>
+# 2. Pasang pystray via pip:
+pip3 install pystray --break-system-packages</code></pre>
                     </div>
-                    <p class="text-[11px] text-slate-400 italic">
-                        *Catatan: Jika pystray belum terpasang, client tetap akan berjalan normal di background tanpa crash.
-                    </p>
+
+                    <!-- Troubleshooting System Tray Notice -->
+                    <div class="p-3.5 rounded-lg bg-amber-950/30 border border-amber-500/40 text-xs text-slate-300 space-y-2 mt-4">
+                        <div class="flex items-center gap-2 text-amber-300 font-semibold">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            Penting: Mengapa Ikon System Tray Tidak Muncul?
+                        </div>
+                        <p class="leading-relaxed">
+                            <strong class="text-white">Di Windows 10/11:</strong> Taskbar secara otomatis menyembunyikan ikon aplikasi baru ke menu <em>Hidden Icons</em> (tanda panah atas <code class="text-amber-200 bg-slate-900 px-1 py-0.5 rounded">^</code> di sebelah kiri jam). Klik tanda <code class="text-amber-200 bg-slate-900 px-1 py-0.5 rounded">^</code> untuk melihatnya. Agar selalu terlihat, buka <em>Windows Settings &rarr; Personalization &rarr; Taskbar &rarr; Other system tray icons</em> dan aktifkan ke "On".
+                        </p>
+                        <p class="leading-relaxed">
+                            <strong class="text-white">Di Linux Mint / Ubuntu:</strong> Jangan pernah menjalankan client menggunakan <code class="text-rose-300 bg-slate-900 px-1 py-0.5 rounded">sudo ./run_client.sh</code>! Akun root tidak memiliki akses ke sesi DBus & X11 desktop user. Selalu jalankan sebagai user biasa: <code class="text-emerald-300 bg-slate-900 px-1 py-0.5 rounded">./run_client.sh</code>.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- 5.C Autostart -->
@@ -513,16 +527,16 @@ pip3 install --no-index --find-links=offline_packages pystray --break-system-pac
                 </p>
                 <div class="code-block text-xs mb-4">
                     <button class="copy-btn" onclick="copyCode(this)">Salin</button>
-                    <pre class="text-indigo-300"><code># 1. Masuk ke folder project
-cd /opt/remotedesktop
+                    <pre class="text-indigo-300"><code># OPSI 1: Pasang Systemd Service Langsung (1-Klik):
+chmod +x install_server_service.sh uninstall_server_service.sh
+sudo ./install_server_service.sh
 
-# 2. Beri izin dan jalankan installer otomatis
-chmod +x install_admin_server.sh
-sudo ./install_admin_server.sh
+# Cek Status Service & Real-time Logs:
+sudo systemctl status lan-remote-server
+sudo journalctl -u lan-remote-server -f
 
-# 3. Kelola service dengan systemd
-sudo systemctl status lan-remotedesktop
-sudo systemctl restart lan-remotedesktop</code></pre>
+# Hapus Service Kapan Saja:
+sudo ./uninstall_server_service.sh</code></pre>
                 </div>
                 <p class="text-xs text-slate-300">
                     Buka browser dari komputer mana saja dalam jaringan LAN: <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">http://[IP-UBUNTU-SERVER]:8001</code>.

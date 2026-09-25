@@ -18,6 +18,10 @@ sudo apt-get install -y \
     python3-dev \
     python3-tk \
     python3-pil \
+    python3-gi \
+    python3-gi-cairo \
+    gir1.2-ayatanaappindicator3-0.1 \
+    gir1.2-appindicator3-0.1 \
     scrot \
     libx11-dev \
     libxtst-dev \
@@ -36,7 +40,7 @@ fi
 if [ -n "$REQ_FILE" ]; then
     pip3 install -r "$REQ_FILE" || pip3 install --break-system-packages -r "$REQ_FILE"
 else
-    pip3 install websockets psutil mss pillow pynput pyautogui pyperclip requests || pip3 install --break-system-packages websockets psutil mss pillow pynput pyautogui pyperclip requests
+    pip3 install websockets psutil mss pillow pynput pyautogui pyperclip requests pystray || pip3 install --break-system-packages websockets psutil mss pillow pynput pyautogui pyperclip requests pystray
 fi
 
 echo "[3/5] Konfigurasi Koneksi Server Admin..."
@@ -74,6 +78,19 @@ cat << 'EOF' > "$SCRIPT_DIR/run_client.sh"
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+if [ "$EUID" -eq 0 ]; then
+    echo "================================================================"
+    echo " [PERINGATAN] Jangan jalankan client agent dengan 'sudo'!"
+    echo "  System Tray dan antarmuka GUI memerlukan akses ke sesi desktop"
+    echo "  pengguna biasa (X11 & DBus)."
+    echo "================================================================"
+    if [ -n "$SUDO_USER" ]; then
+        echo "Beralih otomatis ke user '$SUDO_USER'..."
+        exec sudo -u "$SUDO_USER" env DISPLAY="${DISPLAY:-:0}" XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" "$0" "$@"
+    fi
+fi
+
 # Ensure DISPLAY is set for X11 screen capture
 export DISPLAY="${DISPLAY:-:0}"
 python3 client.py "$@"

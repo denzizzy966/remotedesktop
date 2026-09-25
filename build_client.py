@@ -35,6 +35,10 @@ def build_client():
         "--hidden-import", "pyperclip",
         "--hidden-import", "pystray",
         "--hidden-import", "pystray._win32",
+        "--hidden-import", "tkinter",
+        "--hidden-import", "tkinter.ttk",
+        "--hidden-import", "tkinter.messagebox",
+        "--hidden-import", "settings_ui",
         client_entry
     ]
 

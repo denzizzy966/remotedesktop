@@ -7,11 +7,11 @@ echo ========================================================
 
 if exist "%~dp0LANRemoteClient.exe" (
     echo Menjalankan versi executable mandiri (LANRemoteClient.exe)...
-    "%~dp0LANRemoteClient.exe"
+    "%~dp0LANRemoteClient.exe" %*
     goto finish
 )
 
-python client.py
+python client.py %*
 if %errorlevel% neq 0 (
     echo.
     echo [ERROR] Client terhenti atau terjadi kesalahan.
