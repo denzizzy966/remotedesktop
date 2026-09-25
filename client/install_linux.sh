@@ -10,8 +10,29 @@ echo "=========================================================="
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Helper to wait if Ubuntu background auto-updates (unattended-upgrades) is holding the lock
+wait_for_apt_lock() {
+    local waited=0
+    while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || pgrep -f "unattended-upgr" >/dev/null 2>&1; do
+        if [ $waited -eq 0 ]; then
+            echo "[INFO] Ubuntu sedang menjalankan update sistem di latar belakang (unattended-upgrades)."
+            echo "       Menunggu proses selesai dan lock dpkg dilepaskan secara aman..."
+        fi
+        sleep 3
+        waited=$((waited + 3))
+        if [ $waited -ge 45 ]; then
+            echo "[INFO] Menghentikan service background update agar instalasi dapat dilanjutkan..."
+            sudo systemctl stop unattended-upgrades >/dev/null 2>&1 || true
+            sleep 2
+            break
+        fi
+    done
+}
+
 echo "[1/4] Updating system packages & installing required system dependencies..."
+wait_for_apt_lock
 sudo apt-get update -o Acquire::ForceIPv4=true || true
+wait_for_apt_lock
 sudo apt-get install -y \
     python3 \
     python3-pip \
